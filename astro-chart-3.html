@@ -1,0 +1,3516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Astro Chart — Live Candlesticks + Aspects</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#06080f;--s1:#0d1120;--s2:#121929;--s3:#19243a;
+  --border:#1e2d47;--border2:#243453;
+  --text:#c8d8f0;--muted:#506080;--dim:#2a3d5a;
+  --c0:#f0c060;--c90:#e05050;--c180:#8060e0;
+  --up:#26a69a;--dn:#ef5350;
+}
+
+html,body{height:100%;overflow:hidden}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);display:grid;grid-template-rows:auto 1fr;height:100vh}
+
+/* header */
+header{background:var(--s1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:8px;flex-wrap:wrap;min-height:52px}
+header h1{font-family:'Space Mono',monospace;font-size:13px;color:var(--c0);letter-spacing:1px;white-space:nowrap}
+.htag{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);background:var(--s2);border:1px solid var(--border);padding:3px 7px;border-radius:3px;display:none}
+@media(min-width:600px){.htag{display:inline-block}}
+
+/* dataset switcher */
+.ds-bar{display:flex;gap:3px;align-items:center}
+.ds-btn{padding:5px 10px;border-radius:5px;border:1px solid var(--border);background:var(--s2);color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:0.15s;white-space:nowrap}
+.ds-btn:hover{border-color:var(--border2);color:var(--text)}
+.ds-btn.active{background:var(--c0);color:#06080f;border-color:var(--c0)}
+
+/* ticker bar */
+.ticker-bar{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
+.ticker-bar input{background:var(--s2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;padding:5px 8px;width:70px;outline:none;text-transform:uppercase}
+.ticker-bar input:focus{border-color:var(--c0)}
+.ticker-bar select{background:var(--s2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Space Mono',monospace;font-size:11px;padding:5px 6px;outline:none}
+.load-btn{background:var(--c0);color:#06080f;border:none;border-radius:5px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;padding:6px 12px;cursor:pointer;letter-spacing:0.5px;white-space:nowrap;transition:0.15s}
+.load-btn:hover{background:#f0d070}
+.load-btn:disabled{opacity:0.4;cursor:not-allowed}
+.status{font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;display:none}
+@media(min-width:500px){.status{display:inline}}
+
+/* app layout */
+.app{display:grid;grid-template-columns:260px 1fr;overflow:hidden;height:100%}
+@media(max-width:700px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .sidebar{max-height:45vh;border-right:none;border-bottom:1px solid var(--border)}
+  .pine-wrap{display:none}
+}
+
+/* sidebar */
+.sidebar{background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.stab{flex:1;padding:9px 4px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s}
+.stab.active{color:var(--c0);border-bottom-color:var(--c0)}
+.stab-content{display:none;flex:1;overflow-y:auto;flex-direction:column}
+.stab-content.active{display:flex}
+.scroll{padding:12px;display:flex;flex-direction:column;gap:10px}
+
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.sec{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding-bottom:5px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.mini-btns{display:flex;gap:5px}
+.mini-btn{font-size:9px;padding:2px 6px;border-radius:3px;border:1px solid var(--border);background:var(--s2);color:var(--muted);cursor:pointer;font-family:'Space Mono',monospace}
+.mini-btn:hover{color:var(--text);border-color:var(--border2)}
+
+.chip-grid{display:flex;flex-wrap:wrap;gap:4px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:500;cursor:pointer;border:1.5px solid transparent;transition:all 0.15s;opacity:0.35;user-select:none}
+.chip.on{opacity:1}
+.chip .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.chip[data-planet]{background:var(--s3);border-color:var(--border2)}
+.chip[data-planet].on{background:var(--s2)}
+.aspect-chip-0{border-color:var(--c0)!important;color:var(--c0)}
+.aspect-chip-90{border-color:var(--c90)!important;color:var(--c90)}
+.aspect-chip-180{border-color:var(--c180)!important;color:var(--c180)}
+.aspect-chip-0.on{background:rgba(240,192,96,0.12)!important}
+.aspect-chip-90.on{background:rgba(224,80,80,0.12)!important}
+.aspect-chip-180.on{background:rgba(128,96,224,0.12)!important}
+
+.results-list{display:flex;flex-direction:column;gap:2px}
+.result-row{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:4px;border:1px solid transparent;cursor:pointer;transition:all 0.12s;font-size:10px}
+.result-row:hover{background:var(--s2);border-color:var(--border)}
+.result-bar{width:3px;height:24px;border-radius:2px;flex-shrink:0}
+.result-info{flex:1;min-width:0}
+.result-planets{font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.result-date{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-top:1px}
+
+label.fl{font-size:10px;color:var(--muted);display:block;margin-bottom:3px;letter-spacing:0.5px}
+select.ctl,input.ctl{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px;outline:none}
+select.ctl:focus,input.ctl:focus{border-color:var(--c0)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.btn-apply{width:100%;padding:8px;border-radius:5px;border:none;background:var(--c0);color:#06080f;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase;transition:0.15s}
+.btn-apply:hover{background:#f0d070}
+
+/* main chart area */
+.main{display:flex;flex-direction:column;overflow:hidden;position:relative}
+.chart-wrap{flex:1;position:relative;background:#07101d;overflow:hidden;min-height:0}
+canvas{display:block;position:absolute;top:0;left:0}
+
+/* pine output */
+.pine-wrap{height:190px;background:var(--s1);border-top:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.pine-header{display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.pine-header span{font-family:'Space Mono',monospace;font-size:9px;color:var(--c90);letter-spacing:1px;text-transform:uppercase}
+.pine-count{margin-left:auto;font-size:10px;color:var(--muted)}
+.copy-btn{font-family:'Space Mono',monospace;font-size:9px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--s2);color:var(--text);cursor:pointer;transition:0.15s;text-transform:uppercase;letter-spacing:0.5px}
+.copy-btn:hover{border-color:var(--c90);color:var(--c90)}
+.copy-btn.ok{border-color:var(--up);color:var(--up)}
+.pine-code{flex:1;overflow:auto;padding:8px 14px;font-family:'Space Mono',monospace;font-size:10px;line-height:1.8;white-space:pre;color:#6a8ab0;background:#04060e}
+
+/* tooltip */
+.tooltip{position:absolute;background:var(--s1);border:1px solid var(--border2);border-radius:6px;padding:8px 12px;font-size:11px;pointer-events:none;display:none;z-index:200;min-width:160px;box-shadow:0 8px 32px rgba(0,0,0,0.6)}
+.tt-date{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:3px}
+.tt-ohlc{font-size:10px;color:var(--muted);margin-bottom:3px}
+.tt-asp{font-size:12px;font-weight:600}
+
+/* crosshair */
+.crosshair{position:absolute;pointer-events:none;z-index:100;display:none}
+.ch-v{position:absolute;top:0;bottom:0;width:1px;background:rgba(200,216,240,0.2)}
+.ch-h{position:absolute;left:0;right:0;height:1px;background:rgba(200,216,240,0.2)}
+
+/* overlay msg */
+.overlay-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+.overlay-msg .big{font-size:14px;color:var(--muted);margin-bottom:6px}
+.overlay-msg .small{font-size:11px;color:var(--dim)}
+
+/* price axis */
+.price-axis{position:absolute;right:0;top:0;bottom:0;width:62px;background:rgba(7,16,29,0.9);border-left:1px solid var(--border);pointer-events:none;z-index:50}
+.date-axis{position:absolute;left:0;right:62px;bottom:0;height:22px;background:rgba(7,16,29,0.9);border-top:1px solid var(--border);pointer-events:none;z-index:50}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.stat-box{background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:9px;text-align:center}
+.stat-num{font-family:'Space Mono',monospace;font-size:16px;font-weight:700}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:2px}
+
+.adv-toggle{width:100%;padding:7px 10px;border-radius:5px;border:1px solid var(--border);background:var(--s2);color:var(--muted);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;text-align:left;transition:0.15s}
+.adv-toggle:hover{border-color:var(--border2);color:var(--text)}
+.adv-toggle.open{color:var(--c0);border-color:var(--c0)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>✦ ASTRO CHART</h1>
+  <span class="htag">Live Candlesticks</span>
+  <span class="htag">Astro Aspects</span>
+  <div class="ds-bar">
+    <button class="ds-btn active" id="ds-btn-Tra" onclick="switchDataset('Tra')">Tra</button>
+    <button class="ds-btn" id="ds-btn-Btc" onclick="switchDataset('Btc')">Btc</button>
+    <button class="ds-btn" id="ds-btn-Eth" onclick="switchDataset('Eth')">Eth</button>
+    <button class="ds-btn" id="ds-btn-Prs" onclick="switchDataset('Prs')">Prs</button>
+  </div>
+  <div class="ticker-bar">
+    <input type="text" id="ticker" value="SPY" maxlength="10" placeholder="SPY">
+    <select id="interval">
+      <option value="1d" selected>Daily</option>
+      <option value="1wk">Weekly</option>
+      <option value="1mo">Monthly</option>
+    </select>
+    <select id="range">
+      <option value="6mo">6 months</option>
+      <option value="1y" selected>1 year</option>
+      <option value="2y">2 years</option>
+      <option value="3y">3 years</option>
+    </select>
+    <button class="load-btn" id="load-btn" onclick="loadChart()">▶ Load</button>
+    <span class="status" id="status">Enter ticker and load</span>
+  </div>
+</header>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <button class="stab active" onclick="showTab('filters')">Filters</button>
+      <button class="stab" onclick="showTab('results')">List</button>
+      <button class="stab" onclick="showTab('style')">Style</button>
+      <button class="stab" onclick="showTab('stats')">Stats</button>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="stab-content active scroll" id="tab-filters">
+
+      <!-- Aspect type -->
+      <div>
+        <div class="sec">Aspect Type
+          <div class="mini-btns">
+            <button class="mini-btn" onclick="selectAllAspects(true)">All</button>
+            <button class="mini-btn" onclick="selectAllAspects(false)">None</button>
+          </div>
+        </div>
+        <div class="chip-grid" style="margin-top:7px" id="aspect-chips"></div>
+      </div>
+
+      <!-- Date range -->
+      <div>
+        <div class="sec">Date Range</div>
+        <div class="form-row" style="margin-top:7px">
+          <div><label class="fl">From</label><input type="date" class="ctl" id="date-from" onchange="applyFilters()"></div>
+          <div><label class="fl">To</label><input type="date" class="ctl" id="date-to" onchange="applyFilters()"></div>
+        </div>
+      </div>
+
+      <!-- Advanced -->
+      <div>
+        <button class="adv-toggle" id="adv-toggle" onclick="toggleAdvanced()">
+          ▸ Advanced
+        </button>
+        <div id="adv-panel" style="display:none;flex-direction:column;gap:10px;margin-top:8px">
+          <div>
+            <div class="sec">Planet 1
+              <div class="mini-btns">
+                <button class="mini-btn" onclick="selectAllPlanets('p1',true)">All</button>
+                <button class="mini-btn" onclick="selectAllPlanets('p1',false)">None</button>
+              </div>
+            </div>
+            <div class="chip-grid" style="margin-top:7px" id="p1-chips"></div>
+          </div>
+          <div>
+            <div class="sec">Planet 2
+              <div class="mini-btns">
+                <button class="mini-btn" onclick="selectAllPlanets('p2',true)">All</button>
+                <button class="mini-btn" onclick="selectAllPlanets('p2',false)">None</button>
+              </div>
+            </div>
+            <div class="chip-grid" style="margin-top:7px" id="p2-chips"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RESULTS -->
+    <div class="stab-content scroll" id="tab-results">
+      <div class="sec" id="results-label">Filtered Aspects</div>
+      <div class="results-list" id="results-list"></div>
+    </div>
+
+    <!-- STYLE -->
+    <div class="stab-content scroll" id="tab-style">
+      <div class="sec">Candles</div>
+      <div class="form-row">
+        <div><label class="fl">Up Color</label><input type="color" id="col-up" value="#26a69a" onchange="renderAll()"></div>
+        <div><label class="fl">Down Color</label><input type="color" id="col-dn" value="#ef5350" onchange="renderAll()"></div>
+      </div>
+
+      <div class="sec">Aspect Lines</div>
+      <div class="form-row">
+        <div><label class="fl">Line Style</label>
+          <select class="ctl" id="line-style">
+            <option value="solid">Solid</option>
+            <option value="dashed" selected>Dashed</option>
+            <option value="dotted">Dotted</option>
+          </select>
+        </div>
+        <div><label class="fl">Width</label>
+          <select class="ctl" id="line-width">
+            <option value="1">1px</option>
+            <option value="2" selected>2px</option>
+            <option value="3">3px</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sec">Labels</div>
+      <div><label class="fl">Color Mode</label>
+        <select class="ctl" id="color-mode">
+          <option value="aspect" selected>By Aspect</option>
+          <option value="planet1">By Planet 1</option>
+          <option value="planet2">By Planet 2</option>
+        </select>
+      </div>
+      <div><label class="fl">Label Side</label>
+        <select class="ctl" id="label-side">
+          <option value="right" selected>Right of line</option>
+          <option value="left">Left of line</option>
+        </select>
+      </div>
+      <div class="chip-grid" style="align-items:center">
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="show-p1" checked> P1</label>
+        <div style="display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:5px;overflow:hidden;font-family:'Space Mono',monospace;font-size:9px">
+          <button id="asp-mode-prs" onclick="setAspMode('prs')" style="padding:4px 7px;border:none;background:var(--c0);color:#06080f;cursor:pointer;font-family:inherit;font-size:inherit;font-weight:700;letter-spacing:0.5px">Prs</button>
+          <button id="asp-mode-asp" onclick="setAspMode('asp')" style="padding:4px 7px;border:none;border-left:1px solid var(--border);background:var(--s2);color:var(--muted);cursor:pointer;font-family:inherit;font-size:inherit;font-weight:700;letter-spacing:0.5px">Asp</button>
+          <button id="asp-mode-off" onclick="setAspMode('off')" style="padding:4px 7px;border:none;border-left:1px solid var(--border);background:var(--s2);color:var(--muted);cursor:pointer;font-family:inherit;font-size:inherit;font-weight:700;letter-spacing:0.5px">Off</button>
+        </div>
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="show-p2" checked> P2</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="show-time" checked> Time</label>
+      </div>
+
+      <div class="sec">Pine Script</div>
+      <div><label class="fl">Pine Label Pos</label>
+        <select class="ctl" id="label-pos">
+          <option value="label.style_label_right" selected>Right</option>
+          <option value="label.style_label_left">Left</option>
+          <option value="label.style_label_upper_right">Upper right</option>
+          <option value="label.style_label_upper_left">Upper left</option>
+        </select>
+      </div>
+      <div><label class="fl">Text Size</label>
+        <select class="ctl" id="text-size">
+          <option value="size.tiny">Tiny</option>
+          <option value="size.small" selected>Small</option>
+          <option value="size.normal">Normal</option>
+        </select>
+      </div>
+      <button class="btn-apply" onclick="renderAll()">↻ Refresh</button>
+    </div>
+
+    <!-- STATS -->
+    <div class="stab-content scroll" id="tab-stats">
+      <div class="sec">Overview</div>
+      <div class="stat-grid" id="stats-overview"></div>
+      <div class="sec" style="margin-top:4px">By Aspect</div>
+      <div id="stats-aspects"></div>
+      <div class="sec" style="margin-top:4px">By Planet</div>
+      <div id="stats-planets"></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="chart-wrap" id="chart-wrap">
+      <canvas id="chart-canvas"></canvas>
+      <div class="price-axis" id="price-axis"></div>
+      <div class="date-axis" id="date-axis"></div>
+      <div class="overlay-msg" id="overlay-msg">
+        <div class="big">Enter a ticker and click Load</div>
+        <div class="small">SPY · AAPL · TSLA · BTC-USD · ^GSPC · GLD</div>
+      </div>
+      <div class="tooltip" id="tooltip">
+        <div class="tt-date" id="tt-date"></div>
+        <div class="tt-ohlc" id="tt-ohlc"></div>
+        <div class="tt-asp" id="tt-asp"></div>
+      </div>
+    </div>
+
+    <div class="pine-wrap">
+      <div class="pine-header">
+        <span>Pine Script v5</span>
+        <span class="pine-count" id="pine-count"></span>
+        <button class="copy-btn" id="copy-btn" onclick="copyCode()">Copy</button>
+      </div>
+      <div class="pine-code" id="pine-code">// Load a chart and configure filters to generate Pine Script...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// ASTRO DATA
+// ══════════════════════════════════════════════
+const DATASETS = {
+  Tra: `Venus	90	Chiron	11/28/2024	6:58:18
+Mercury	180	Jupiter	12/04/2024	12:15:32
+Sun	90	Saturn	12/04/2024	18:18:05
+Sun	0	Mercury	12/06/2024	4:17:32
+Mercury	90	Saturn	12/07/2024	3:53:02
+Venus	0	Pluto	12/07/2024	16:07:54
+Sun	180	Jupiter	12/07/2024	22:57:45
+Venus	180	Mars	12/12/2024	12:45:50
+Sun	90	Neptune	12/18/2024	16:28:28
+Sun	90	T.Node	12/23/2024	12:39:20
+Jupiter	90	Saturn	12/24/2024	23:59:10
+Mercury	180	Jupiter	12/27/2024	0:47:25
+Mercury	90	Saturn	12/27/2024	9:28:24
+Venus	90	Uranus	12/28/2024	9:41:18
+Mars	180	Pluto	01/03/2025	9:21:35
+Mercury	90	Neptune	01/06/2025	15:55:41
+Mercury	90	T.Node	01/08/2025	19:14:02
+Sun	90	Chiron	01/09/2025	3:53:46
+Venus	90	Jupiter	01/14/2025	21:47:34
+Sun	180	Mars	01/16/2025	4:38:23
+Venus	0	Saturn	01/19/2025	3:26:01
+Mercury	90	Chiron	01/21/2025	10:06:04
+Sun	0	Pluto	01/21/2025	14:28:26
+Mercury	180	Mars	01/23/2025	22:48:35
+Mercury	0	Pluto	01/29/2025	9:52:00
+Venus	0	Neptune	02/01/2025	18:33:06
+Venus	0	T.Node	02/01/2025	23:42:08
+Mars	90	Chiron	02/04/2025	4:43:57
+Neptune	0	T.Node	02/07/2025	8:11:23
+Sun	0	Mercury	02/09/2025	14:07:50
+Mercury	90	Uranus	02/10/2025	21:27:27
+Sun	90	Uranus	02/11/2025	21:29:55
+Mercury	90	Jupiter	02/20/2025	22:13:15
+Mercury	0	Saturn	02/25/2025	14:01:58
+Mercury	0	T.Node	03/01/2025	18:34:44
+Mercury	0	Neptune	03/02/2025	18:21:37
+Sun	90	Jupiter	03/02/2025	20:18:21
+Mercury	0	Venus	03/12/2025	0:54:27
+Sun	0	Saturn	03/12/2025	12:28:43
+Sun	0	T.Node	03/17/2025	20:02:54
+Sun	0	Neptune	03/20/2025	1:24:49
+Sun	0	Venus	03/23/2025	3:07:17
+Sun	0	Mercury	03/24/2025	21:48:04
+Mars	90	Chiron	03/26/2025	22:12:50
+Venus	0	Neptune	03/27/2025	15:12:53
+Mercury	0	Neptune	03/30/2025	4:46:12
+Venus	0	T.Node	04/01/2025	10:38:37
+Mercury	0	T.Node	04/04/2025	8:53:19
+Venus	0	Saturn	04/07/2025	13:00:59
+Mercury	0	T.Node	04/11/2025	3:00:41
+Sun	0	Chiron	04/12/2025	17:59:46
+Mercury	0	Neptune	04/17/2025	6:10:51
+Sun	90	Mars	04/21/2025	3:33:38
+Saturn	0	T.Node	04/21/2025	13:31:24
+Sun	90	Pluto	04/23/2025	19:09:48
+Venus	0	T.Node	04/24/2025	6:35:09
+Venus	0	Saturn	04/25/2025	2:01:35
+Mars	180	Pluto	04/27/2025	3:04:48
+Venus	0	Neptune	05/02/2025	19:06:41
+Mercury	0	Chiron	05/07/2025	3:47:30
+Mercury	90	Pluto	05/12/2025	19:22:37
+Sun	0	Uranus	05/18/2025	1:31:53
+Mercury	90	Mars	05/18/2025	6:35:26
+Jupiter	90	T.Node	05/18/2025	20:45:34
+Mercury	0	Uranus	05/25/2025	1:14:58
+Sun	0	Mercury	05/30/2025	6:12:29
+Venus	0	Chiron	06/01/2025	22:10:42
+Mercury	90	T.Node	06/06/2025	2:27:45
+Mercury	0	Jupiter	06/08/2025	22:11:36
+Mercury	90	Saturn	06/09/2025	12:48:05
+Venus	90	Pluto	06/09/2025	19:20:01
+Mercury	90	Neptune	06/10/2025	0:54:13
+Sun	90	T.Node	06/13/2025	11:46:58
+Mars	90	Uranus	06/15/2025	11:46:24
+Jupiter	90	Saturn	06/15/2025	16:35:44
+Jupiter	90	Neptune	06/19/2025	5:16:00
+Sun	90	Saturn	06/22/2025	20:35:24
+Sun	90	Neptune	06/23/2025	10:28:47
+Mercury	90	Chiron	06/24/2025	9:15:56
+Sun	0	Jupiter	06/24/2025	17:16:53
+Mercury	180	Pluto	06/29/2025	9:56:48
+Venus	0	Uranus	07/04/2025	14:44:50
+Sun	90	Chiron	07/19/2025	14:48:03
+Mars	180	T.Node	07/21/2025	3:59:11
+Venus	90	T.Node	07/22/2025	3:20:25
+Venus	90	Mars	07/23/2025	10:23:00
+Sun	180	Pluto	07/25/2025	8:32:23
+Sun	0	Mercury	08/01/2025	1:41:03
+Venus	90	Saturn	08/01/2025	15:33:53
+Venus	90	Neptune	08/01/2025	22:48:26
+Mars	180	Saturn	08/09/2025	4:51:50
+Mars	180	Neptune	08/10/2025	0:12:54
+Venus	0	Jupiter	08/12/2025	7:29:56
+Venus	90	Chiron	08/23/2025	4:28:55
+Sun	90	Uranus	08/24/2025	9:14:29
+Venus	180	Pluto	08/27/2025	7:53:31
+Mercury	90	Uranus	09/03/2025	9:39:59
+Mars	90	Jupiter	09/05/2025	4:58:21
+Sun	180	T.Node	09/10/2025	21:19:26
+Mercury	180	T.Node	09/12/2025	3:58:27
+Sun	0	Mercury	09/13/2025	12:51:29
+Mars	180	Chiron	09/16/2025	17:46:26
+Mercury	180	Saturn	09/17/2025	19:46:51
+Mercury	180	Neptune	09/19/2025	0:00:39
+Venus	90	Uranus	09/20/2025	17:41:12
+Sun	180	Saturn	09/21/2025	7:45:18
+Sun	180	Neptune	09/23/2025	14:53:14
+Mars	90	Pluto	09/24/2025	13:51:18
+Mercury	90	Jupiter	10/01/2025	22:58:46
+Mercury	180	Chiron	10/03/2025	20:04:30
+Venus	180	T.Node	10/04/2025	11:20:11
+Mercury	90	Pluto	10/07/2025	16:40:18
+Venus	180	Saturn	10/11/2025	13:10:20
+Venus	180	Neptune	10/14/2025	3:15:47
+Sun	90	Jupiter	10/17/2025	7:42:41
+Sun	180	Chiron	10/18/2025	1:40:01
+Mercury	0	Mars	10/20/2025	8:51:12
+Jupiter	90	Chiron	10/24/2025	0:18:48
+Sun	90	Pluto	10/24/2025	15:24:05
+Mercury	180	Uranus	10/29/2025	21:35:29
+Venus	180	Chiron	11/02/2025	8:37:15
+Venus	90	Jupiter	11/03/2025	1:16:13
+Mars	180	Uranus	11/04/2025	19:29:44
+Venus	90	Pluto	11/08/2025	5:43:25
+Mercury	0	Mars	11/13/2025	1:15:09
+Mercury	180	Uranus	11/19/2025	13:44:25
+Sun	0	Mercury	11/20/2025	11:22:57
+Sun	180	Uranus	11/21/2025	14:25:03
+Mars	90	T.Node	11/24/2025	15:32:03
+Mercury	0	Venus	11/25/2025	3:51:20
+Venus	180	Uranus	11/30/2025	4:48:05
+Sun	90	T.Node	12/05/2025	14:21:30
+Mars	90	Saturn	12/09/2025	2:15:17
+Mercury	180	Uranus	12/10/2025	21:58:50
+Venus	90	T.Node	12/11/2025	7:41:51
+Mars	90	Neptune	12/14/2025	13:43:30
+Sun	90	Saturn	12/17/2025	6:33:17
+Mercury	90	T.Node	12/20/2025	17:58:52
+Sun	90	Neptune	12/21/2025	3:01:42
+Venus	90	Saturn	12/21/2025	7:08:37
+Jupiter	90	Chiron	12/21/2025	12:07:37
+Venus	90	Neptune	12/24/2025	7:30:54
+Mercury	90	Saturn	12/30/2025	9:15:01
+Mercury	90	Neptune	01/01/2026	15:32:53
+Sun	0	Venus	01/06/2026	18:35:45
+Venus	0	Mars	01/08/2026	4:43:06
+Sun	0	Mars	01/09/2026	13:40:55
+Venus	180	Jupiter	01/09/2026	19:34:37
+Sun	180	Jupiter	01/10/2026	10:41:52
+Mars	180	Jupiter	01/10/2026	16:24:51
+Venus	90	Chiron	01/11/2026	18:12:51
+Sun	90	Chiron	01/12/2026	22:31:35
+Mars	90	Chiron	01/14/2026	0:33:13
+Mercury	180	Jupiter	01/14/2026	10:16:52
+Mercury	90	Chiron	01/16/2026	8:20:24
+Mercury	0	Mars	01/18/2026	9:40:14
+Venus	0	Pluto	01/20/2026	6:04:04
+Sun	0	Mercury	01/21/2026	17:48:36
+Mercury	0	Pluto	01/22/2026	19:14:32
+Sun	0	Pluto	01/23/2026	12:27:59
+Mars	0	Pluto	01/28/2026	1:01:01
+Mercury	0	Venus	01/29/2026	12:16:47
+Mercury	90	Uranus	02/05/2026	14:13:14
+Venus	90	Uranus	02/08/2026	11:48:27
+Mercury	0	T.Node	02/12/2026	9:00:55
+Sun	90	Uranus	02/16/2026	7:01:20
+Venus	0	T.Node	02/17/2026	15:43:51
+Saturn	0	Neptune	02/20/2026	18:53:45
+Sun	0	T.Node	02/27/2026	15:52:18
+Mars	90	Uranus	02/27/2026	18:20:31
+Mercury	0	Venus	02/28/2026	7:34:44
+Sun	0	Mercury	03/07/2026	13:01:26
+Venus	0	Neptune	03/07/2026	13:27:13
+Venus	0	Saturn	03/08/2026	15:39:21
+Mars	0	T.Node	03/13/2026	23:57:47
+Mercury	0	Mars	03/15/2026	10:07:41
+Mercury	0	T.Node	03/17/2026	19:07:58
+Venus	90	Jupiter	03/18/2026	18:08:37
+Sun	0	Neptune	03/22/2026	13:18:20
+Mercury	0	T.Node	03/23/2026	8:00:53
+Sun	0	Saturn	03/25/2026	10:54:56
+Venus	0	Chiron	03/27/2026	0:44:25
+Venus	90	Pluto	04/04/2026	0:37:43
+Sun	90	Jupiter	04/06/2026	0:22:18
+Mars	0	Neptune	04/13/2026	7:30:02
+Sun	0	Chiron	04/16/2026	17:10:11
+Mercury	0	Neptune	04/17/2026	4:01:10
+Mars	0	Saturn	04/20/2026	0:43:41
+Mercury	0	Saturn	04/20/2026	13:21:51
+Mercury	0	Mars	04/20/2026	23:44:27
+Venus	0	Uranus	04/24/2026	3:58:01
+Sun	90	Pluto	04/25/2026	18:32:27
+Mercury	90	Jupiter	04/26/2026	20:32:55
+Venus	90	T.Node	04/30/2026	3:31:06
+Mercury	0	Chiron	05/01/2026	22:07:15
+Mars	90	Jupiter	05/05/2026	4:07:58
+Mercury	90	Pluto	05/06/2026	0:07:53
+Sun	0	Mercury	05/14/2026	16:24:05
+Mars	0	Chiron	05/16/2026	21:33:55
+Mercury	0	Uranus	05/18/2026	2:09:53
+Mercury	90	T.Node	05/19/2026	18:11:25
+Venus	90	Neptune	05/22/2026	8:31:39
+Sun	0	Uranus	05/22/2026	16:25:55
+Sun	90	T.Node	05/25/2026	22:46:51
+Mars	90	Pluto	05/26/2026	6:01:47
+Venus	90	Saturn	05/29/2026	5:02:20
+Mercury	90	Neptune	06/04/2026	2:18:06
+Venus	0	Jupiter	06/09/2026	21:58:55
+Mercury	90	Saturn	06/10/2026	7:38:19
+Uranus	90	T.Node	06/12/2026	9:19:54
+Venus	90	Chiron	06/13/2026	7:23:43
+Venus	180	Pluto	06/17/2026	22:37:56
+Sun	90	Neptune	06/26/2026	0:38:06
+Mars	90	T.Node	06/30/2026	6:28:51
+Jupiter	90	Chiron	07/02/2026	4:23:34
+Mars	0	Uranus	07/04/2026	8:07:35
+Sun	90	Saturn	07/06/2026	12:46:45
+Venus	180	T.Node	07/10/2026	9:33:31
+Sun	0	Mercury	07/13/2026	3:25:28
+Venus	90	Uranus	07/13/2026	16:26:19
+Jupiter	180	Pluto	07/20/2026	16:44:23
+Sun	90	Chiron	07/23/2026	17:35:33
+Sun	180	Pluto	07/27/2026	8:54:43
+Venus	90	Mars	07/29/2026	9:09:31
+Sun	0	Jupiter	07/29/2026	14:17:31
+Mercury	90	Chiron	08/10/2026	7:15:19
+Venus	180	Neptune	08/11/2026	0:01:32
+Mercury	180	Pluto	08/12/2026	3:19:22
+Mercury	0	Jupiter	08/15/2026	13:22:36
+Mars	90	Neptune	08/17/2026	11:52:19
+Venus	180	Saturn	08/21/2026	14:42:50
+Sun	180	T.Node	08/23/2026	0:02:58
+Mercury	180	T.Node	08/25/2026	11:04:25
+Sun	0	Mercury	08/27/2026	19:03:29
+Mercury	90	Uranus	08/28/2026	9:24:19
+Sun	90	Uranus	08/29/2026	0:18:33
+Mars	90	Saturn	09/01/2026	11:58:24
+Venus	180	Chiron	09/10/2026	19:15:05
+Mercury	180	Neptune	09/12/2026	18:37:33
+Venus	90	Pluto	09/15/2026	20:34:31
+Mercury	180	Saturn	09/18/2026	12:00:20
+Sun	180	Neptune	09/26/2026	3:36:03
+Mars	90	Chiron	09/27/2026	13:58:38
+Mercury	180	Chiron	09/30/2026	5:14:43
+Mercury	90	Mars	10/02/2026	11:14:01
+Mercury	90	Pluto	10/02/2026	22:42:27
+Mars	180	Pluto	10/03/2026	12:38:34
+Sun	180	Saturn	10/04/2026	14:28:55
+Mercury	0	Venus	10/07/2026	2:10:02
+Venus	90	Mars	10/10/2026	23:30:48
+Venus	90	Pluto	10/20/2026	8:55:48
+Sun	180	Chiron	10/22/2026	0:26:22
+Sun	0	Venus	10/24/2026	5:43:47
+Sun	90	Pluto	10/26/2026	14:11:28
+Venus	180	Chiron	10/28/2026	9:34:29
+Mercury	90	Mars	10/30/2026	19:19:49
+Sun	0	Mercury	11/04/2026	16:24:00
+Jupiter	180	T.Node	11/12/2026	7:40:38
+Mars	180	T.Node	11/14/2026	20:03:27
+Mars	0	Jupiter	11/16/2026	8:23:20
+Sun	90	T.Node	11/17/2026	13:51:59
+Sun	90	Jupiter	11/18/2026	11:38:17
+Sun	90	Mars	11/19/2026	19:48:42
+Sun	180	Uranus	11/26/2026	0:40:59
+Venus	180	Chiron	11/29/2026	2:16:32
+Mercury	90	T.Node	12/02/2026	7:38:09
+Mercury	90	Jupiter	12/04/2026	9:02:17
+Mars	90	Uranus	12/04/2026	21:27:57
+Mercury	180	Uranus	12/08/2026	12:28:52
+Mercury	90	Mars	12/09/2026	15:40:14
+Venus	90	Pluto	12/09/2026	20:37:22
+Sun	90	Neptune	12/23/2026	13:37:01
+Mercury	90	Neptune	12/26/2026	21:46:30
+Venus	90	T.Node	12/30/2026	1:05:36
+Sun	90	Saturn	12/30/2026	1:27:29
+Mercury	90	Saturn	12/31/2026	1:54:17
+Sun	0	Mercury	01/01/2027	19:07:12
+Venus	90	Jupiter	01/03/2027	19:55:12
+Venus	180	Uranus	01/09/2027	10:19:23
+Mercury	90	Chiron	01/11/2027	2:33:24
+Mercury	0	Pluto	01/16/2027	4:48:19
+Sun	90	Chiron	01/16/2027	18:36:03
+Venus	90	Mars	01/16/2027	23:37:20
+Sun	0	Pluto	01/25/2027	10:01:06
+Mercury	0	T.Node	01/25/2027	15:33:00
+Mercury	180	Jupiter	01/27/2027	18:36:54
+Mercury	90	Uranus	02/02/2027	14:17:36
+Venus	90	Neptune	02/05/2027	19:33:54
+Mercury	180	Mars	02/07/2027	9:14:28
+Sun	0	T.Node	02/09/2027	14:39:20
+Sun	180	Jupiter	02/11/2027	2:28:30
+Venus	90	Saturn	02/13/2027	13:39:53
+Mercury	180	Mars	02/16/2027	19:41:48
+Mercury	90	Uranus	02/17/2027	0:37:46
+Mars	90	Uranus	02/17/2027	8:32:52
+Sun	0	Mercury	02/18/2027	18:38:43
+Sun	180	Mars	02/19/2027	17:50:39
+Sun	90	Uranus	02/20/2027	17:10:22
+Jupiter	180	T.Node	02/22/2027	16:21:42
+Venus	90	Chiron	02/27/2027	5:17:36
+Venus	0	Pluto	03/06/2027	15:47:07
+Mercury	180	Mars	03/11/2027	10:30:53
+Venus	180	Jupiter	03/16/2027	14:04:18
+Venus	0	T.Node	03/18/2027	3:39:41
+Venus	180	Mars	03/19/2027	18:14:07
+Mercury	90	Uranus	03/20/2027	16:09:51
+Sun	0	Neptune	03/25/2027	1:12:24
+Venus	90	Uranus	03/28/2027	15:17:39
+Sun	0	Saturn	04/07/2027	19:18:03
+Mercury	0	Neptune	04/11/2027	19:53:56
+Mercury	0	Saturn	04/19/2027	15:02:51
+Sun	0	Chiron	04/20/2027	18:21:21
+Jupiter	180	T.Node	04/23/2027	17:39:02
+Venus	0	Neptune	04/24/2027	12:55:38
+Mercury	0	Chiron	04/25/2027	7:45:38
+Sun	90	Pluto	04/27/2027	17:24:29
+Mercury	90	Pluto	04/28/2027	9:46:19
+Sun	0	Mercury	04/28/2027	23:21:34
+Mercury	90	T.Node	05/02/2027	19:44:25
+Mercury	90	Jupiter	05/03/2027	6:27:23
+Sun	90	T.Node	05/06/2027	19:38:03
+Venus	0	Saturn	05/07/2027	20:47:41
+Mercury	90	Mars	05/08/2027	0:21:04
+Sun	90	Jupiter	05/08/2027	21:37:20
+Mercury	0	Uranus	05/11/2027	14:48:55
+Venus	0	Chiron	05/16/2027	12:40:45
+Venus	90	Pluto	05/20/2027	20:02:31
+Sun	90	Mars	05/26/2027	1:13:15
+Venus	90	T.Node	05/26/2027	9:05:47
+Sun	0	Uranus	05/27/2027	8:11:26
+Mars	90	Uranus	05/29/2027	4:13:35
+Venus	90	Jupiter	05/31/2027	16:46:21
+Venus	0	Uranus	06/14/2027	4:18:18
+Venus	90	Mars	06/23/2027	8:28:29
+Sun	0	Mercury	06/23/2027	9:59:15
+Sun	90	Neptune	06/28/2027	14:50:29
+Mercury	0	Venus	07/01/2027	11:21:47
+Venus	90	Neptune	07/08/2027	14:27:36
+Mercury	90	Neptune	07/19/2027	16:05:44
+Sun	90	Saturn	07/20/2027	12:48:35
+Venus	90	Saturn	07/25/2027	17:19:07
+Mars	180	Neptune	07/26/2027	15:24:10
+Sun	90	Chiron	07/27/2027	22:54:44
+Sun	180	Pluto	07/29/2027	8:47:16
+Venus	90	Chiron	07/31/2027	8:54:01
+Venus	180	Pluto	08/01/2027	9:13:17
+Mercury	90	Saturn	08/01/2027	10:47:28
+Sun	180	T.Node	08/04/2027	3:29:09
+Mercury	90	Chiron	08/04/2027	19:34:37
+Mercury	180	Pluto	08/05/2027	8:44:35
+Venus	180	T.Node	08/05/2027	22:08:43
+Mercury	180	T.Node	08/08/2027	2:25:41
+Mercury	0	Venus	08/11/2027	8:29:22
+Sun	0	Mercury	08/11/2027	13:01:52
+Sun	0	Venus	08/12/2027	2:20:34
+Mercury	0	Jupiter	08/20/2027	0:46:15
+Mercury	90	Uranus	08/22/2027	11:14:02
+Venus	0	Jupiter	08/26/2027	4:59:21
+Venus	90	Uranus	08/28/2027	20:03:56
+Mars	180	Saturn	08/29/2027	9:35:08
+Sun	0	Jupiter	08/31/2027	9:29:05
+Sun	90	Uranus	09/02/2027	15:50:44
+Mercury	180	Neptune	09/07/2027	10:11:31
+Mars	180	Chiron	09/08/2027	14:11:56
+Mars	90	Pluto	09/09/2027	20:38:30
+Jupiter	90	Uranus	09/10/2027	18:40:36
+Mars	90	T.Node	09/18/2027	4:24:30
+Venus	180	Neptune	09/18/2027	13:05:14
+Mercury	180	Saturn	09/23/2027	12:13:57
+Sun	180	Neptune	09/28/2027	16:18:31
+Mercury	180	Chiron	10/02/2027	7:32:57
+Venus	180	Saturn	10/04/2027	14:29:01
+Mercury	90	Pluto	10/06/2027	2:31:54
+Mercury	90	Pluto	10/09/2027	7:24:58
+Venus	180	Chiron	10/10/2027	16:37:11
+Mercury	0	Venus	10/11/2027	11:31:57
+Venus	90	Pluto	10/12/2027	1:52:07
+Mercury	180	Chiron	10/13/2027	6:13:33
+Venus	90	T.Node	10/15/2027	5:47:58
+Sun	180	Saturn	10/18/2027	2:35:13
+Sun	0	Mercury	10/19/2027	17:30:19
+Mercury	180	Saturn	10/21/2027	6:31:42
+Sun	180	Chiron	10/26/2027	1:26:56
+Sun	90	Pluto	10/28/2027	12:26:18
+Mars	180	Uranus	10/28/2027	20:06:06
+Sun	90	T.Node	10/30/2027	14:35:14
+Mercury	180	Saturn	11/04/2027	10:54:37
+Venus	180	Uranus	11/08/2027	12:08:41
+Mercury	180	Chiron	11/11/2027	5:02:48
+Mercury	90	Pluto	11/13/2027	11:38:09
+Mercury	90	T.Node	11/13/2027	19:20:59
+Mars	90	Jupiter	11/16/2027	6:06:07
+Pluto	0	T.Node	11/16/2027	8:41:11
+Venus	90	Jupiter	11/20/2027	5:34:43
+Venus	0	Mars	11/25/2027	3:35:18
+Venus	90	Neptune	11/28/2027	18:10:18
+Sun	180	Uranus	11/30/2027	11:21:31
+Mars	90	Neptune	12/01/2027	0:23:41
+Mercury	180	Uranus	12/04/2027	10:46:05
+Sun	0	Mercury	12/12/2027	0:16:20
+Venus	90	Saturn	12/12/2027	16:11:41
+Mercury	90	Jupiter	12/16/2027	6:45:05
+Sun	90	Jupiter	12/18/2027	19:41:47
+Venus	90	Chiron	12/20/2027	1:17:20
+Mercury	90	Neptune	12/21/2027	0:21:56
+Venus	0	T.Node	12/22/2027	4:21:08
+Mars	90	Saturn	12/23/2027	6:00:23
+Venus	0	Pluto	12/24/2027	12:55:04
+Sun	90	Neptune	12/26/2027	0:11:57
+Mercury	90	Saturn	12/31/2027	17:59:05
+Mars	90	Chiron	01/03/2028	19:15:00
+Mercury	90	Chiron	01/06/2028	8:21:51
+Mars	0	T.Node	01/06/2028	21:43:19
+Mercury	0	T.Node	01/07/2028	21:26:54
+Mercury	0	Mars	01/08/2028	22:55:05
+Mercury	0	Pluto	01/10/2028	9:09:45
+Mars	0	Pluto	01/11/2028	18:05:37
+Sun	90	Saturn	01/12/2028	3:32:49
+Venus	90	Uranus	01/18/2028	12:38:36
+Sun	90	Chiron	01/20/2028	17:00:57
+Sun	0	T.Node	01/22/2028	23:11:44
+Sun	0	Pluto	01/27/2028	7:02:24
+Mercury	0	Mars	01/27/2028	14:43:27
+Sun	0	Mercury	02/02/2028	10:46:56
+Venus	180	Jupiter	02/04/2028	15:48:01
+Mercury	0	Pluto	02/07/2028	15:53:08
+Venus	0	Neptune	02/11/2028	14:15:16
+Mars	90	Uranus	02/18/2028	6:54:57
+Mercury	0	Pluto	02/23/2028	3:36:15
+Sun	90	Uranus	02/25/2028	4:13:57
+Venus	0	Saturn	02/29/2028	4:40:59
+Venus	0	Chiron	03/06/2028	5:35:30
+Venus	90	T.Node	03/06/2028	5:44:05
+T.Node	90	Chiron	03/06/2028	11:39:13
+Mars	180	Jupiter	03/10/2028	17:57:13
+Venus	90	Pluto	03/12/2028	11:00:49
+Sun	180	Jupiter	03/12/2028	17:36:34
+Mercury	90	Uranus	03/17/2028	16:12:57
+Sun	0	Mars	03/21/2028	4:35:23
+Mercury	180	Jupiter	03/26/2028	11:32:58
+Sun	0	Neptune	03/26/2028	13:15:25
+Mars	0	Neptune	03/28/2028	2:40:20
+Mercury	0	Neptune	04/04/2028	2:58:43
+Saturn	90	T.Node	04/05/2028	23:05:40
+Mercury	0	Mars	04/08/2028	9:29:38
+Sun	0	Mercury	04/12/2028	0:55:38
+Venus	0	Uranus	04/12/2028	23:46:50
+Mercury	90	T.Node	04/14/2028	13:49:48
+Mercury	0	Saturn	04/15/2028	17:23:31
+Mercury	0	Chiron	04/17/2028	8:57:30
+Sun	90	T.Node	04/17/2028	10:32:21
+Mercury	90	Pluto	04/19/2028	17:32:05
+Sun	0	Saturn	04/20/2028	14:09:52
+Sun	0	Chiron	04/23/2028	22:31:33
+Mars	90	T.Node	04/24/2028	2:47:37
+Sun	90	Pluto	04/28/2028	15:49:44
+Venus	90	Jupiter	04/30/2028	22:10:07
+Mars	0	Saturn	05/01/2028	0:40:29
+Mars	0	Chiron	05/04/2028	11:45:14
+Mercury	0	Uranus	05/07/2028	16:25:02
+Mars	90	Pluto	05/09/2028	19:43:35
+Venus	90	Jupiter	05/21/2028	5:14:43
+Mercury	0	Venus	05/25/2028	2:53:55
+Sun	0	Uranus	05/31/2028	0:47:04
+Sun	0	Venus	06/01/2028	11:59:59
+Sun	0	Mercury	06/02/2028	4:45:57
+Venus	0	Uranus	06/03/2028	10:13:33
+Mercury	0	Uranus	06/05/2028	10:07:01
+Saturn	0	Chiron	06/08/2028	18:26:13
+Sun	90	Jupiter	06/08/2028	21:59:39
+Venus	0	Mars	06/14/2028	8:57:55
+Mercury	0	Mars	06/21/2028	14:50:22
+Mars	0	Uranus	06/23/2028	22:44:19
+Mercury	0	Uranus	06/24/2028	3:58:39
+Saturn	90	Pluto	06/24/2028	4:59:14
+Mercury	0	Mars	06/25/2028	16:26:01
+Sun	90	Neptune	06/30/2028	5:00:57
+Mercury	90	Jupiter	07/03/2028	7:56:35
+Mars	90	Jupiter	07/08/2028	23:26:26
+Pluto	90	Chiron	07/09/2028	7:36:48
+Mercury	90	Neptune	07/14/2028	0:13:50
+Sun	180	T.Node	07/15/2028	6:25:22
+Venus	0	Uranus	07/17/2028	13:46:29
+Mercury	180	T.Node	07/20/2028	23:37:21
+Sun	0	Mercury	07/25/2028	15:07:09
+Mercury	180	Pluto	07/27/2028	19:19:38
+Mercury	90	Chiron	07/28/2028	4:50:26
+Mercury	90	Saturn	07/29/2028	7:31:08
+Sun	180	Pluto	07/30/2028	8:03:07
+Sun	90	Chiron	07/31/2028	7:04:14
+Sun	90	Saturn	08/02/2028	19:56:49
+Mars	90	Neptune	08/02/2028	23:56:22
+Venus	90	Jupiter	08/03/2028	7:29:35
+Mercury	90	Uranus	08/16/2028	10:20:07
+Venus	90	Neptune	08/16/2028	14:26:58
+Mars	180	T.Node	08/24/2028	1:28:14
+Mercury	0	Jupiter	08/28/2028	6:01:41
+Venus	180	T.Node	08/30/2028	2:16:21
+Mercury	180	Neptune	09/03/2028	11:12:16
+Sun	90	Uranus	09/06/2028	7:50:04
+Venus	0	Mars	09/07/2028	21:50:31
+Venus	180	Pluto	09/12/2028	3:11:48
+Venus	90	Chiron	09/13/2028	9:15:08
+Mars	180	Pluto	09/15/2028	6:58:23
+Venus	90	Saturn	09/15/2028	19:19:15
+Mars	90	Chiron	09/17/2028	10:02:13
+Mars	90	Saturn	09/21/2028	13:58:22
+Jupiter	180	Neptune	09/28/2028	21:15:35
+Sun	180	Neptune	09/30/2028	4:47:41
+Sun	0	Jupiter	09/30/2028	14:50:38
+Sun	0	Mercury	10/02/2028	12:37:07
+Mercury	0	Jupiter	10/03/2028	14:47:18
+Mercury	180	Neptune	10/04/2028	17:24:24
+Sun	90	T.Node	10/11/2028	9:24:08
+Venus	90	Uranus	10/14/2028	8:07:06
+Mercury	180	Neptune	10/18/2028	0:48:23
+Mercury	0	Jupiter	10/22/2028	15:36:23
+Pluto	90	Chiron	10/25/2028	1:47:05
+Mercury	90	T.Node	10/25/2028	19:19:24
+Sun	180	Chiron	10/29/2028	4:50:11
+Sun	90	Pluto	10/29/2028	9:59:46
+Sun	180	Saturn	10/30/2028	19:33:10
+Venus	180	Neptune	11/02/2028	2:40:05
+Mercury	180	Chiron	11/06/2028	6:07:21
+Jupiter	90	T.Node	11/06/2028	11:41:40
+Mercury	90	Pluto	11/06/2028	15:42:27
+Mercury	180	Saturn	11/07/2028	2:45:41
+Venus	90	T.Node	11/09/2028	12:45:00
+Venus	0	Jupiter	11/10/2028	2:58:55
+Saturn	90	Pluto	11/15/2028	14:56:45
+Mars	90	Uranus	11/16/2028	9:50:35
+Sun	0	Mercury	11/20/2028	3:39:44
+Venus	180	Chiron	11/25/2028	3:32:54
+Venus	180	Saturn	11/25/2028	20:28:12
+Venus	90	Pluto	11/26/2028	13:40:25
+Mercury	180	Uranus	11/29/2028	3:52:32`,
+  Btc: `Sun	90	Venus	11/21/2024	20:47:22
+Mercury	90	Saturn	11/22/2024	12:13:01
+Venus	0	Sun	11/22/2024	23:10:36
+Mercury	90	Saturn	11/29/2024	6:43:19
+Mercury	90	Uranus	12/02/2024	5:02:10
+Venus	0	Jupiter	12/06/2024	18:30:22
+Venus	0	Mercury	12/09/2024	11:28:19
+Sun	90	Uranus	12/10/2024	19:12:53
+Sun	90	Saturn	12/13/2024	4:56:45
+Venus	0	T.Node	12/15/2024	11:38:51
+Sun	0	Pluto	12/22/2024	15:11:13
+Venus	0	Chiron	12/23/2024	11:57:15
+Sun	0	Mars	12/26/2024	17:03:37
+Venus	0	Neptune	12/27/2024	2:57:18
+Mars	180	Mercury	12/29/2024	13:55:25
+T.Node	90	Pluto	12/29/2024	19:12:09
+Mercury	90	Uranus	12/31/2024	11:35:04
+Mercury	90	Saturn	01/02/2025	8:45:39
+Venus	0	Venus	01/03/2025	4:06:32
+Sun	0	Sun	01/03/2025	10:33:46
+Mars	180	Jupiter	01/07/2025	14:33:08
+Mercury	0	Pluto	01/09/2025	7:12:39
+Mercury	0	Mars	01/12/2025	3:58:28
+Mercury	0	Sun	01/17/2025	10:42:38
+Sun	0	Jupiter	01/19/2025	6:57:35
+Sun	0	Mercury	01/22/2025	8:38:25
+Venus	0	Uranus	01/22/2025	10:29:30
+Venus	180	Saturn	01/25/2025	3:44:53
+Mercury	0	Jupiter	01/27/2025	17:56:35
+Sun	0	T.Node	01/29/2025	2:43:40
+Mercury	0	Mercury	01/29/2025	15:56:52
+Mercury	0	T.Node	02/02/2025	19:00:02
+Venus	90	Pluto	02/06/2025	2:48:57
+Sun	0	Chiron	02/06/2025	23:27:31
+Mercury	0	Chiron	02/08/2025	0:25:56
+Mercury	0	Neptune	02/10/2025	6:39:26
+Sun	0	Neptune	02/10/2025	22:11:15
+Venus	90	Mars	02/12/2025	14:55:45
+Mercury	0	Venus	02/14/2025	11:40:36
+Saturn	0	Uranus	02/17/2025	12:24:46
+Sun	0	Venus	02/18/2025	10:57:47
+Pluto	0	Mercury	02/20/2025	15:01:05
+Mercury	0	Uranus	02/24/2025	21:20:54
+Mercury	180	Saturn	02/26/2025	6:16:48
+Mercury	90	Pluto	03/04/2025	5:36:26
+Mercury	90	Mars	03/07/2025	14:39:22
+Sun	0	Uranus	03/09/2025	13:36:18
+Saturn	180	Saturn	03/09/2025	14:54:11
+Sun	180	Saturn	03/12/2025	0:22:01
+Venus	90	Mars	03/18/2025	8:07:36
+Sun	90	Pluto	03/21/2025	15:40:40
+Mercury	90	Mars	03/23/2025	11:25:52
+Venus	90	Pluto	03/25/2025	1:00:07
+Sun	90	Mars	03/25/2025	20:13:07
+Mercury	90	Pluto	03/28/2025	6:35:11
+Sun	90	Sun	04/02/2025	19:31:34
+Mars	180	Jupiter	04/16/2025	22:56:02
+Mercury	90	Pluto	04/18/2025	0:32:11
+Sun	90	Jupiter	04/19/2025	6:25:45
+Jupiter	90	Uranus	04/20/2025	7:46:14
+Sun	90	Mercury	04/22/2025	11:14:28
+Mercury	90	Mars	04/22/2025	13:57:04
+Mars	180	Mercury	04/24/2025	8:31:41
+Mercury	90	Sun	04/29/2025	7:40:51
+Sun	90	T.Node	04/29/2025	12:31:06
+Jupiter	90	Saturn	05/02/2025	20:23:30
+Venus	90	Pluto	05/02/2025	23:13:39
+Sun	90	Chiron	05/08/2025	19:10:57
+Venus	90	Mars	05/09/2025	5:37:55
+Mars	180	T.Node	05/09/2025	6:15:33
+Neptune	90	Pluto	05/09/2025	15:06:47
+Mercury	90	Jupiter	05/10/2025	3:32:58
+Mercury	90	Mercury	05/11/2025	23:35:03
+Sun	90	Neptune	05/12/2025	22:26:36
+Mercury	90	T.Node	05/15/2025	19:20:42
+Venus	90	Sun	05/19/2025	5:31:29
+Mercury	90	Chiron	05/20/2025	10:52:57
+Sun	90	Venus	05/20/2025	19:54:02
+Mercury	90	Neptune	05/22/2025	9:55:04
+Mercury	90	Venus	05/26/2025	0:19:22
+Mars	180	Chiron	05/27/2025	2:35:58
+Mars	180	Neptune	06/03/2025	15:13:20
+Mercury	90	Uranus	06/03/2025	18:59:38
+Mercury	90	Saturn	06/04/2025	22:15:13
+Venus	90	Jupiter	06/05/2025	15:21:54
+Venus	90	Mercury	06/08/2025	18:29:47
+Mercury	180	Pluto	06/09/2025	13:02:43
+Sun	90	Uranus	06/09/2025	20:11:08
+Mercury	180	Mars	06/11/2025	15:43:20
+Sun	90	Saturn	06/12/2025	9:34:57
+Venus	90	T.Node	06/15/2025	11:35:41
+Jupiter	180	Pluto	06/15/2025	17:41:14
+Mercury	180	Sun	06/15/2025	22:09:35
+Saturn	90	Pluto	06/16/2025	14:46:43
+Mars	180	Venus	06/17/2025	11:44:10
+Sun	180	Pluto	06/22/2025	10:40:39
+Venus	90	Chiron	06/24/2025	0:02:44
+T.Node	180	Saturn	06/24/2025	11:28:35
+Mercury	180	Jupiter	06/26/2025	8:37:34
+Sun	180	Mars	06/26/2025	19:09:41
+Venus	90	Neptune	06/27/2025	17:02:59
+Mercury	180	Mercury	06/28/2025	19:35:40
+Jupiter	180	Mars	07/03/2025	22:48:28
+Venus	90	Venus	07/04/2025	16:07:26
+Sun	180	Sun	07/05/2025	1:27:49
+Mercury	180	T.Node	07/05/2025	7:34:34
+Uranus	90	Venus	07/09/2025	23:19:25
+Mars	180	Uranus	07/20/2025	10:52:56
+Venus	90	Uranus	07/21/2025	18:38:47
+Sun	180	Jupiter	07/21/2025	23:43:32
+Pluto	0	Mercury	07/22/2025	9:12:48
+T.Node	0	Uranus	07/23/2025	17:28:40
+Venus	90	Saturn	07/23/2025	22:00:46
+Mars	0	Saturn	07/24/2025	11:50:16
+Sun	180	Mercury	07/25/2025	6:11:50
+Mercury	180	T.Node	07/31/2025	5:06:04
+Venus	180	Pluto	08/01/2025	5:58:40
+Sun	180	T.Node	08/01/2025	10:34:10
+Venus	180	Mars	08/04/2025	19:52:45
+Saturn	90	Pluto	08/08/2025	16:59:56
+Jupiter	180	Sun	08/08/2025	20:39:27
+Mars	90	Pluto	08/09/2025	1:24:13
+Sun	180	Chiron	08/10/2025	19:56:41
+Venus	180	Sun	08/11/2025	13:41:24
+Sun	180	Neptune	08/14/2025	23:50:49
+Mars	90	Mars	08/15/2025	16:09:17
+Mercury	180	T.Node	08/20/2025	16:46:45
+Sun	180	Venus	08/22/2025	21:32:54
+Venus	180	Jupiter	08/25/2025	5:01:53
+Mercury	180	Chiron	08/27/2025	2:57:25
+Venus	180	Mercury	08/27/2025	19:48:19
+Mars	90	Sun	08/28/2025	0:19:13
+Mercury	180	Neptune	08/29/2025	10:35:44
+Neptune	90	Pluto	09/01/2025	7:41:30
+Mercury	180	Venus	09/02/2025	12:53:17
+Venus	180	T.Node	09/02/2025	13:14:29
+Venus	180	Chiron	09/10/2025	0:05:56
+Sun	180	Uranus	09/11/2025	17:28:30
+Mercury	180	Uranus	09/12/2025	12:26:15
+Venus	180	Neptune	09/13/2025	7:08:40
+Mercury	0	Saturn	09/13/2025	19:46:00
+Sun	0	Saturn	09/14/2025	5:45:57
+Mercury	90	Pluto	09/19/2025	2:18:11
+Venus	180	Venus	09/19/2025	13:00:27
+Mercury	90	Mars	09/21/2025	11:08:30
+Mars	90	Jupiter	09/21/2025	13:10:28
+Sun	90	Pluto	09/24/2025	1:26:30
+Mercury	90	Sun	09/26/2025	2:38:05
+Mars	90	Mercury	09/26/2025	4:29:17
+Sun	90	Mars	09/28/2025	7:08:06
+Venus	180	Uranus	10/05/2025	4:05:36
+Mars	90	T.Node	10/06/2025	6:28:16
+Mercury	90	Jupiter	10/06/2025	7:14:20
+Sun	90	Sun	10/06/2025	7:24:53
+Venus	0	Saturn	10/07/2025	3:36:03
+Mercury	90	Mercury	10/08/2025	9:15:48
+Mercury	90	T.Node	10/13/2025	2:44:29
+Venus	90	Pluto	10/14/2025	21:26:25
+Venus	90	Mars	10/18/2025	5:41:39
+Mars	90	Chiron	10/19/2025	5:55:16
+Mercury	90	Chiron	10/19/2025	16:33:00
+Sun	90	Jupiter	10/22/2025	14:33:37
+Mercury	90	Neptune	10/22/2025	19:36:26
+Venus	90	Sun	10/24/2025	13:34:00
+Mars	90	Neptune	10/24/2025	22:19:33
+Sun	90	Mercury	10/25/2025	17:48:30
+Mercury	90	Venus	10/29/2025	11:52:01
+Sun	90	T.Node	11/01/2025	14:50:22
+Mars	90	Venus	11/04/2025	15:02:18
+Uranus	90	Venus	11/04/2025	23:49:47
+Venus	90	Jupiter	11/06/2025	11:40:49
+Venus	90	Mercury	11/08/2025	23:32:49
+Sun	90	Chiron	11/10/2025	14:09:32
+Venus	90	T.Node	11/14/2025	11:01:04
+Sun	90	Neptune	11/14/2025	13:28:24
+Mercury	90	Venus	11/18/2025	23:10:04
+Venus	90	Chiron	11/21/2025	14:57:30
+Sun	90	Venus	11/22/2025	2:26:20
+Venus	90	Neptune	11/24/2025	19:16:16
+Mercury	90	Neptune	11/25/2025	6:36:37
+Venus	90	Venus	11/30/2025	20:30:50
+Mars	90	Uranus	11/30/2025	22:38:06
+Mars	90	Saturn	12/04/2025	5:36:13
+Mercury	90	Neptune	12/04/2025	10:34:28
+Sun	90	Uranus	12/11/2025	1:02:02
+Mercury	90	Venus	12/11/2025	22:59:43
+Sun	90	Saturn	12/13/2025	10:45:14
+Venus	90	Uranus	12/16/2025	2:42:06
+Mars	0	Pluto	12/17/2025	0:31:44
+Venus	90	Saturn	12/18/2025	1:19:00
+Mars	0	Mars	12/22/2025	12:08:09
+Sun	0	Pluto	12/22/2025	20:53:01
+Venus	0	Pluto	12/25/2025	16:11:43
+Mercury	90	Uranus	12/25/2025	17:13:06
+Sun	0	Mars	12/26/2025	22:45:23
+Mercury	90	Saturn	12/27/2025	8:33:44
+Venus	0	Mars	12/28/2025	23:25:42
+Pluto	0	Mercury	12/29/2025	19:42:13
+Mars	0	Sun	01/01/2026	19:51:45
+Mercury	0	Pluto	01/02/2026	16:19:38
+Sun	0	Sun	01/03/2026	16:22:43
+Venus	0	Sun	01/04/2026	5:43:52
+Mercury	0	Mars	01/05/2026	8:55:04
+Mercury	0	Sun	01/10/2026	9:30:28
+Venus	0	Jupiter	01/17/2026	1:47:07
+Sun	0	Jupiter	01/19/2026	12:42:44
+Venus	0	Mercury	01/19/2026	13:24:55
+Mercury	0	Jupiter	01/20/2026	7:57:12
+Mercury	0	Mercury	01/22/2026	4:39:32
+Sun	0	Mercury	01/22/2026	14:21:58
+Mars	0	Jupiter	01/22/2026	16:51:25
+Venus	0	T.Node	01/25/2026	0:34:20
+Mercury	0	T.Node	01/26/2026	5:19:44
+Mars	0	Mercury	01/26/2026	16:59:10
+Sun	0	T.Node	01/29/2026	8:30:12
+Mercury	0	Chiron	01/31/2026	9:00:01
+Venus	0	Chiron	02/01/2026	4:30:24
+Mercury	0	Neptune	02/02/2026	15:12:29
+Venus	0	Neptune	02/04/2026	8:56:55
+Mars	0	T.Node	02/04/2026	11:39:45
+Mercury	0	Venus	02/06/2026	22:26:20
+Sun	0	Chiron	02/07/2026	5:20:49
+Venus	0	Venus	02/10/2026	10:36:22
+Sun	0	Neptune	02/11/2026	4:03:25
+Mars	0	Chiron	02/15/2026	22:25:48
+Sun	0	Venus	02/18/2026	16:43:01
+Mercury	0	Uranus	02/19/2026	19:11:02
+Mars	0	Neptune	02/21/2026	0:12:19
+Mercury	180	Saturn	02/23/2026	1:27:25
+Saturn	90	Pluto	02/25/2026	18:29:09
+Venus	0	Uranus	02/25/2026	18:57:07
+Venus	180	Saturn	02/27/2026	17:59:11
+Mercury	180	Saturn	03/01/2026	9:07:15
+Mars	0	Venus	03/02/2026	15:54:58
+Mercury	0	Uranus	03/04/2026	20:02:32
+Venus	90	Pluto	03/07/2026	10:49:47
+Neptune	90	Pluto	03/09/2026	7:39:09
+Sun	0	Uranus	03/09/2026	19:29:16
+Venus	90	Mars	03/10/2026	19:02:41
+Sun	180	Saturn	03/12/2026	6:14:02
+Venus	90	Sun	03/17/2026	3:25:53
+Sun	90	Pluto	03/21/2026	21:24:14
+Sun	90	Mars	03/26/2026	1:56:24
+Mars	0	Uranus	03/27/2026	1:26:16
+Mars	180	Saturn	03/30/2026	4:19:53
+Venus	90	Jupiter	03/30/2026	4:53:37
+Saturn	90	Mars	03/31/2026	14:02:14
+Venus	90	Mercury	04/01/2026	17:46:38
+Sun	90	Sun	04/03/2026	1:21:45
+Mercury	0	Uranus	04/06/2026	14:49:45
+Venus	90	T.Node	04/07/2026	7:53:51
+Mercury	180	Saturn	04/08/2026	17:40:20
+Mars	90	Pluto	04/11/2026	11:15:56
+Venus	90	Chiron	04/14/2026	16:06:16
+Mercury	90	Pluto	04/16/2026	0:10:39
+Mars	90	Mars	04/16/2026	19:39:56
+Venus	90	Neptune	04/17/2026	22:35:13
+Mercury	90	Mars	04/18/2026	19:40:50
+Sun	90	Jupiter	04/19/2026	12:09:09
+Sun	90	Mercury	04/22/2026	16:56:32
+Mercury	90	Sun	04/23/2026	18:38:47
+Venus	90	Venus	04/24/2026	4:25:23
+Mars	90	Sun	04/27/2026	0:36:01
+Uranus	90	Venus	04/28/2026	3:31:44
+Sun	90	T.Node	04/29/2026	18:17:58
+Mercury	90	Jupiter	05/02/2026	19:06:24
+Mercury	90	Mercury	05/04/2026	9:40:19
+Mercury	90	T.Node	05/07/2026	19:29:46
+Sun	90	Chiron	05/09/2026	1:02:15
+Venus	90	Uranus	05/10/2026	1:15:24
+Mercury	90	Chiron	05/12/2026	1:50:54
+Venus	90	Saturn	05/12/2026	2:03:43
+Sun	90	Neptune	05/13/2026	4:15:14
+Mercury	90	Neptune	05/13/2026	22:09:03
+Mercury	90	Venus	05/17/2026	9:45:17
+Mars	90	Jupiter	05/18/2026	5:30:13
+Venus	180	Pluto	05/20/2026	2:13:46
+Sun	90	Venus	05/21/2026	1:36:05
+Mars	90	Mercury	05/22/2026	9:15:48
+Venus	180	Mars	05/23/2026	13:51:21
+Mercury	90	Uranus	05/26/2026	13:37:44
+Mercury	90	Saturn	05/27/2026	20:04:00
+Venus	180	Sun	05/30/2026	5:12:44
+Mars	90	T.Node	05/31/2026	14:21:11
+Mercury	180	Pluto	06/02/2026	5:15:57
+Mercury	180	Mars	06/04/2026	19:45:48
+Chiron	90	Jupiter	06/08/2026	7:28:41
+Sun	90	Uranus	06/10/2026	2:01:24
+Mercury	180	Sun	06/10/2026	11:32:01
+Sun	90	Saturn	06/12/2026	15:22:58
+Mars	90	Chiron	06/12/2026	19:42:55
+Venus	180	Jupiter	06/12/2026	23:08:08
+Venus	180	Mercury	06/15/2026	15:33:44
+Saturn	90	Sun	06/16/2026	3:29:27
+Mars	90	Neptune	06/18/2026	7:32:36
+Venus	180	T.Node	06/21/2026	14:01:04
+Sun	180	Pluto	06/22/2026	16:23:30
+Sun	180	Mars	06/27/2026	0:56:32
+Jupiter	180	Jupiter	06/27/2026	23:10:18
+Mars	90	Venus	06/28/2026	21:31:18
+Venus	180	Chiron	06/29/2026	10:35:20
+Venus	180	Neptune	07/02/2026	23:11:53
+Sun	180	Sun	07/05/2026	7:19:55
+Venus	180	Venus	07/09/2026	17:57:01
+Jupiter	180	Mercury	07/12/2026	10:04:01
+Sun	180	Jupiter	07/22/2026	5:26:49
+T.Node	0	Venus	07/25/2026	7:57:45
+Sun	180	Mercury	07/25/2026	11:57:47
+Mars	90	Uranus	07/26/2026	9:17:46
+Venus	180	Uranus	07/27/2026	9:19:46
+Venus	0	Saturn	07/29/2026	17:04:04
+Mars	90	Saturn	07/29/2026	23:34:18
+Sun	180	T.Node	08/01/2026	16:25:51
+Venus	90	Pluto	08/08/2026	1:26:44
+Mercury	180	Jupiter	08/09/2026	7:16:46
+Sun	180	Chiron	08/11/2026	1:44:03
+Mercury	180	Mercury	08/11/2026	5:32:51
+Venus	90	Mars	08/12/2026	6:07:37
+Jupiter	180	T.Node	08/12/2026	12:38:43
+Mars	180	Pluto	08/13/2026	7:31:47
+Mercury	180	T.Node	08/15/2026	1:25:29
+Sun	180	Neptune	08/15/2026	5:34:09
+Mars	180	Mars	08/19/2026	15:34:44
+Mercury	180	Chiron	08/19/2026	15:49:29
+Venus	90	Sun	08/20/2026	13:24:53
+Mercury	180	Neptune	08/21/2026	15:32:33
+Sun	180	Venus	08/23/2026	3:17:53
+Mercury	180	Venus	08/25/2026	10:30:42
+Mars	180	Sun	08/31/2026	21:44:05
+Mercury	180	Uranus	09/04/2026	11:53:11
+Mercury	0	Saturn	09/05/2026	20:31:08
+Saturn	90	Sun	09/05/2026	21:09:08
+Venus	90	Jupiter	09/09/2026	13:09:00
+Mercury	90	Pluto	09/11/2026	9:35:53
+Sun	180	Uranus	09/11/2026	23:13:11
+Mercury	90	Mars	09/13/2026	21:55:05
+Sun	0	Saturn	09/14/2026	11:29:01
+Venus	90	Mercury	09/14/2026	13:50:03
+Mercury	90	Sun	09/18/2026	21:09:46
+Sun	90	Pluto	09/24/2026	7:13:37
+Jupiter	180	Chiron	09/25/2026	1:13:37
+Mars	180	Jupiter	09/27/2026	5:44:31
+Sun	90	Mars	09/28/2026	12:59:17
+Chiron	90	Jupiter	09/29/2026	22:06:47
+Mercury	90	Jupiter	09/30/2026	1:20:37
+Mercury	90	Mercury	10/02/2026	10:14:38
+Mars	180	Mercury	10/02/2026	13:56:57
+Sun	90	Sun	10/06/2026	13:14:42
+Mercury	90	T.Node	10/08/2026	1:04:29
+Mars	180	T.Node	10/14/2026	17:03:52
+Mercury	90	Chiron	10/17/2026	13:55:23
+Jupiter	180	Neptune	10/18/2026	14:36:05
+Venus	90	Mercury	10/20/2026	22:03:58
+Sun	90	Jupiter	10/22/2026	20:20:11
+Sun	90	Mercury	10/25/2026	23:38:19
+Venus	90	Jupiter	10/26/2026	1:36:53
+Mercury	90	Chiron	10/30/2026	0:55:22
+Mars	180	Chiron	10/31/2026	17:03:17
+Sun	90	T.Node	11/01/2026	20:42:42
+Mercury	90	T.Node	11/06/2026	14:52:08
+Mars	180	Neptune	11/08/2026	20:35:46
+Sun	90	Chiron	11/10/2026	19:54:35
+Sun	90	Neptune	11/14/2026	19:11:47
+Mercury	90	T.Node	11/21/2026	5:42:24
+Sun	90	Venus	11/22/2026	8:14:11
+Mars	180	Venus	11/26/2026	4:50:39
+Mercury	90	Chiron	11/28/2026	10:35:30
+Mercury	90	Neptune	12/01/2026	5:43:38
+Venus	90	Jupiter	12/03/2026	12:19:24
+Mercury	90	Venus	12/06/2026	8:27:25
+Venus	90	Mercury	12/08/2026	4:26:26
+T.Node	0	Neptune	12/10/2026	11:43:54
+Sun	90	Uranus	12/11/2026	6:46:09
+Sun	90	Saturn	12/13/2026	16:28:17
+Venus	90	T.Node	12/16/2026	22:10:31
+Mercury	90	Uranus	12/18/2026	20:18:31
+Mercury	90	Saturn	12/20/2026	10:02:09
+Sun	0	Pluto	12/23/2026	2:41:23
+Mercury	0	Pluto	12/26/2026	12:56:45
+Venus	90	Chiron	12/26/2026	20:10:53
+Sun	0	Mars	12/27/2026	4:36:35
+Mercury	0	Mars	12/29/2026	3:54:55
+Venus	90	Neptune	12/30/2026	22:27:25
+Mercury	0	Sun	01/03/2027	1:57:04
+Sun	0	Sun	01/03/2027	22:11:09
+Venus	90	Venus	01/07/2027	9:38:59
+Mercury	0	Jupiter	01/12/2027	21:23:09
+Mercury	0	Mercury	01/14/2027	18:02:46
+Mercury	0	T.Node	01/18/2027	19:45:37
+Sun	0	Jupiter	01/19/2027	18:27:13
+Sun	0	Mercury	01/22/2027	20:09:02
+Mercury	0	Chiron	01/24/2027	5:11:14
+Venus	90	Uranus	01/25/2027	2:17:39
+Mercury	0	Neptune	01/26/2027	17:08:22
+Venus	90	Saturn	01/27/2027	6:31:54
+Sun	0	T.Node	01/29/2027	14:19:05
+Mercury	0	Venus	02/01/2027	1:45:23
+Venus	0	Pluto	02/04/2027	16:46:13
+Jupiter	180	Neptune	02/07/2027	8:48:15
+Sun	0	Chiron	02/07/2027	11:01:21
+Venus	0	Mars	02/08/2027	7:17:41
+Sun	0	Neptune	02/11/2027	9:41:50
+Venus	0	Sun	02/15/2027	2:01:31
+Mercury	0	Venus	02/18/2027	7:41:22
+Sun	0	Venus	02/18/2027	22:24:36
+Mars	180	Venus	02/21/2027	4:57:44
+Mercury	0	Neptune	02/26/2027	4:36:26
+Venus	0	Jupiter	02/28/2027	19:03:51
+Venus	0	Mercury	03/03/2027	10:11:27
+Saturn	90	Sun	03/03/2027	15:47:10
+Mercury	0	Neptune	03/09/2027	3:22:15
+Venus	0	T.Node	03/09/2027	4:31:01
+Sun	0	Uranus	03/10/2027	1:05:43
+Sun	180	Saturn	03/12/2027	11:49:10
+Jupiter	180	Chiron	03/12/2027	12:50:25
+Venus	0	Chiron	03/16/2027	16:55:41
+Mars	180	Neptune	03/16/2027	17:00:03
+Mercury	0	Venus	03/18/2027	10:45:53
+Venus	0	Neptune	03/20/2027	0:50:39
+Sun	90	Pluto	03/22/2027	3:04:22
+Sun	90	Mars	03/26/2027	7:39:31
+Venus	0	Venus	03/26/2027	8:39:41
+Mercury	0	Uranus	04/02/2027	4:33:20
+Sun	90	Sun	04/03/2027	7:00:53
+Mercury	180	Saturn	04/03/2027	18:51:58
+Chiron	90	Jupiter	04/06/2027	18:47:47
+T.Node	0	Chiron	04/09/2027	14:15:17
+Mercury	90	Pluto	04/09/2027	16:32:34
+Venus	0	Uranus	04/11/2027	6:08:46
+Mercury	90	Mars	04/12/2027	2:14:37
+Venus	180	Saturn	04/13/2027	6:37:53
+Mercury	90	Sun	04/16/2027	10:30:53
+Mars	180	Neptune	04/18/2027	4:39:38
+Sun	90	Jupiter	04/19/2027	17:47:03
+Venus	90	Pluto	04/21/2027	4:42:35
+Sun	90	Mercury	04/22/2027	22:37:36
+Mercury	90	Jupiter	04/24/2027	14:52:44
+Venus	90	Mars	04/24/2027	14:57:42
+Mercury	90	Mercury	04/26/2027	2:48:49
+Mercury	90	T.Node	04/29/2027	8:20:12
+Sun	90	T.Node	04/29/2027	23:59:01
+Venus	90	Sun	05/01/2027	2:49:19
+Mercury	90	Chiron	05/03/2027	12:34:51
+Neptune	90	Mars	05/03/2027	15:22:16
+Mercury	90	Neptune	05/05/2027	9:28:10
+Mercury	90	Venus	05/09/2027	1:22:53
+Sun	90	Chiron	05/09/2027	6:36:01
+Sun	90	Neptune	05/13/2027	9:48:45
+Venus	90	Jupiter	05/14/2027	9:46:36
+Mars	180	Venus	05/14/2027	20:32:46
+Jupiter	180	Chiron	05/14/2027	23:04:16
+Venus	90	Mercury	05/16/2027	23:27:35
+Mercury	90	Uranus	05/19/2027	21:19:27
+Sun	90	Venus	05/21/2027	7:17:42
+Mercury	90	Saturn	05/21/2027	14:12:38
+Venus	90	T.Node	05/22/2027	15:00:29
+Venus	90	Chiron	05/30/2027	0:22:29
+Chiron	90	Mercury	05/30/2027	1:12:17
+Mercury	180	Pluto	05/30/2027	3:09:48
+Venus	90	Neptune	06/02/2027	7:06:00
+Mercury	180	Mars	06/05/2027	22:37:41
+Venus	90	Venus	06/08/2027	12:54:00
+Sun	90	Uranus	06/10/2027	7:37:13
+Sun	90	Saturn	06/12/2027	21:00:08
+Jupiter	180	Neptune	06/15/2027	10:38:30
+Mercury	180	Mars	06/15/2027	13:20:33
+Sun	180	Pluto	06/22/2027	22:10:33
+Mercury	180	Pluto	06/23/2027	18:53:24
+Venus	90	Uranus	06/24/2027	6:22:45
+Mars	180	Uranus	06/25/2027	17:00:06
+Venus	90	Saturn	06/26/2027	6:22:59
+Sun	180	Mars	06/27/2027	6:43:53
+Mars	0	Saturn	06/30/2027	7:17:07
+Venus	180	Pluto	07/04/2027	2:30:08
+Sun	180	Sun	07/05/2027	13:00:59
+Venus	180	Mars	07/07/2027	11:53:29
+Venus	180	Sun	07/13/2027	22:06:44
+Mercury	180	Pluto	07/14/2027	7:58:54
+Mars	90	Pluto	07/17/2027	12:15:19
+Mercury	180	Mars	07/18/2027	13:20:45
+Sun	180	Jupiter	07/22/2027	11:18:07
+Mercury	180	Sun	07/24/2027	7:17:59
+Mars	90	Mars	07/24/2027	15:31:34
+Sun	180	Mercury	07/25/2027	17:49:46
+Jupiter	180	Venus	07/26/2027	16:53:27
+Venus	180	Jupiter	07/27/2027	1:23:10
+Venus	180	Mercury	07/29/2027	14:15:45
+Sun	180	T.Node	08/01/2027	22:12:41
+Mercury	180	Jupiter	08/02/2027	3:18:11
+Mercury	180	Mercury	08/03/2027	16:10:01
+Venus	180	T.Node	08/04/2027	3:57:28
+Mars	90	Sun	08/06/2027	18:13:56
+Mercury	180	T.Node	08/06/2027	23:50:49
+Sun	180	Chiron	08/11/2027	7:30:07
+Mercury	180	Chiron	08/11/2027	8:18:49
+Venus	180	Chiron	08/11/2027	10:49:08
+Mercury	180	Neptune	08/13/2027	7:36:06
+Venus	180	Neptune	08/14/2027	16:24:54
+Sun	180	Neptune	08/15/2027	11:24:24
+Mercury	180	Venus	08/17/2027	4:12:34
+Venus	180	Venus	08/20/2027	20:02:06
+Sun	180	Venus	08/23/2027	9:13:20
+Mercury	180	Uranus	08/27/2027	18:59:54
+Mercury	0	Saturn	08/29/2027	6:05:37
+Mars	90	Jupiter	09/01/2027	6:39:27
+Mercury	90	Pluto	09/04/2027	6:42:00
+Venus	180	Uranus	09/05/2027	7:45:31
+Mars	90	Mercury	09/06/2027	0:58:28
+Mercury	90	Mars	09/07/2027	1:11:47
+Venus	0	Saturn	09/07/2027	7:03:02
+Sun	180	Uranus	09/12/2027	5:03:29
+Mercury	90	Sun	09/12/2027	15:19:49
+Sun	0	Saturn	09/14/2027	17:21:54
+Venus	90	Pluto	09/15/2027	0:32:01
+Mars	90	T.Node	09/16/2027	8:17:57
+Venus	90	Mars	09/18/2027	8:51:13
+Neptune	90	Mars	09/18/2027	19:45:12
+Sun	90	Pluto	09/24/2027	13:09:20
+Venus	90	Sun	09/24/2027	17:07:27
+Mercury	90	Jupiter	09/26/2027	18:08:38
+Sun	90	Mars	09/28/2027	18:50:40
+Mars	90	Chiron	09/29/2027	12:36:10
+Mercury	90	Mercury	09/30/2027	20:48:03
+T.Node	0	T.Node	10/03/2027	1:30:01
+Mars	90	Neptune	10/05/2027	6:31:13
+Sun	90	Sun	10/06/2027	19:01:52
+Venus	90	Jupiter	10/07/2027	16:56:22
+Venus	90	Mercury	10/10/2027	5:16:35
+Mercury	90	Mercury	10/13/2027	10:33:35
+Venus	90	T.Node	10/15/2027	17:56:54
+Mars	90	Venus	10/16/2027	1:16:23
+Mercury	90	Jupiter	10/16/2027	15:39:27
+Chiron	90	Mercury	10/18/2027	18:57:16
+Venus	90	Chiron	10/22/2027	23:43:11
+Sun	90	Jupiter	10/23/2027	2:15:22
+Venus	90	Neptune	10/26/2027	4:54:35
+Sun	90	Mercury	10/26/2027	5:30:46
+Jupiter	180	Uranus	10/26/2027	12:50:42
+Venus	90	Venus	11/01/2027	7:53:25
+Sun	90	T.Node	11/02/2027	2:28:58
+Mercury	90	Jupiter	11/09/2027	14:19:43
+Jupiter	0	Saturn	11/09/2027	14:24:43
+Sun	90	Chiron	11/11/2027	1:43:51
+Mars	90	Uranus	11/11/2027	10:21:41
+Mercury	90	Mercury	11/11/2027	19:03:45
+Mars	90	Saturn	11/14/2027	17:15:02
+Sun	90	Neptune	11/15/2027	1:04:37
+Mercury	90	T.Node	11/16/2027	8:12:36
+Venus	90	Uranus	11/16/2027	19:05:07
+Venus	90	Saturn	11/18/2027	18:24:33
+Mercury	90	Chiron	11/22/2027	1:55:04
+Sun	90	Venus	11/22/2027	14:06:56
+Mercury	90	Neptune	11/24/2027	14:36:04
+Venus	0	Pluto	11/26/2027	12:09:50
+Mars	0	Pluto	11/27/2027	11:27:58
+Mercury	90	Venus	11/29/2027	10:12:54
+Venus	0	Mars	11/29/2027	20:40:31
+Mars	0	Mars	12/02/2027	22:36:17
+Venus	0	Sun	12/06/2027	5:30:55
+Sun	90	Uranus	12/11/2027	12:34:56
+Mercury	90	Uranus	12/11/2027	15:18:00
+Mercury	90	Saturn	12/13/2027	4:37:09
+Mars	0	Sun	12/13/2027	5:16:20
+Sun	90	Saturn	12/13/2027	22:19:13
+Mercury	0	Pluto	12/19/2027	6:25:49
+Venus	0	Jupiter	12/19/2027	7:32:27
+Venus	0	Mercury	12/21/2027	20:28:01
+Mercury	0	Mars	12/21/2027	21:10:28
+Sun	0	Pluto	12/23/2027	8:32:15
+T.Node	0	Mercury	12/24/2027	18:35:01
+Mercury	0	Sun	12/26/2027	19:22:37
+Sun	0	Mars	12/27/2027	10:23:27
+Venus	0	T.Node	12/27/2027	10:37:38
+Mars	0	Jupiter	01/02/2028	23:40:58
+Venus	0	Chiron	01/03/2028	18:54:53
+Sun	0	Sun	01/04/2028	3:55:00
+Mercury	0	Jupiter	01/05/2028	20:50:30
+Mars	0	Mercury	01/06/2028	23:17:35
+Venus	0	Neptune	01/07/2028	1:29:57
+Mercury	0	Mercury	01/07/2028	20:41:20
+Mercury	0	T.Node	01/12/2028	11:24:52
+Venus	0	Venus	01/13/2028	7:42:26
+Mars	0	T.Node	01/15/2028	16:50:49
+Sun	0	Jupiter	01/20/2028	0:19:31
+Mercury	0	Chiron	01/20/2028	17:54:39
+Sun	0	Mercury	01/23/2028	1:58:57
+Mars	0	Chiron	01/27/2028	2:13:46
+Mercury	0	Chiron	01/27/2028	21:30:46
+Venus	0	Uranus	01/29/2028	6:59:37
+Sun	0	T.Node	01/29/2028	20:03:16
+Venus	180	Saturn	01/31/2028	8:22:01
+Mars	0	Neptune	02/01/2028	3:26:18
+Mercury	0	T.Node	02/05/2028	4:15:47
+Sun	0	Chiron	02/07/2028	16:48:52
+Venus	90	Pluto	02/08/2028	11:42:37
+Mars	0	Venus	02/10/2028	18:10:01
+Sun	0	Neptune	02/11/2028	15:33:05
+Venus	90	Mars	02/12/2028	1:16:46
+Venus	90	Sun	02/18/2028	21:26:24
+Sun	0	Venus	02/19/2028	4:17:04
+Mercury	0	T.Node	02/25/2028	7:19:59
+Venus	90	Jupiter	03/04/2028	7:42:40
+Neptune	90	Mars	03/04/2028	9:41:30
+Mercury	0	Chiron	03/04/2028	15:53:32
+Mars	0	Uranus	03/06/2028	1:56:11
+Venus	90	Mercury	03/07/2028	4:47:58
+Mercury	0	Neptune	03/07/2028	19:14:23
+Mars	180	Saturn	03/09/2028	4:40:58
+Sun	0	Uranus	03/09/2028	6:54:32
+Sun	180	Saturn	03/11/2028	17:40:31
+Mercury	0	Venus	03/13/2028	7:06:26
+Venus	90	T.Node	03/13/2028	15:59:53
+Jupiter	0	Saturn	03/18/2028	23:05:26
+Sun	90	Pluto	03/21/2028	8:55:38
+Mars	90	Pluto	03/21/2028	11:13:17
+Venus	90	Chiron	03/22/2028	12:07:51
+Mercury	0	Uranus	03/25/2028	10:20:20
+Sun	90	Mars	03/25/2028	13:26:50
+Venus	90	Neptune	03/26/2028	14:44:46
+Mars	90	Mars	03/26/2028	19:31:55
+Mercury	180	Saturn	03/26/2028	20:17:30
+T.Node	0	Jupiter	03/28/2028	20:49:19
+Chiron	90	Mercury	03/29/2028	5:29:26
+Mercury	90	Pluto	04/01/2028	3:55:58
+Sun	90	Sun	04/02/2028	12:45:33
+Mercury	90	Mars	04/03/2028	8:42:51
+Venus	90	Venus	04/03/2028	21:44:48
+Mars	90	Sun	04/06/2028	0:23:35
+Mercury	90	Sun	04/07/2028	9:13:31
+Jupiter	180	Uranus	04/09/2028	1:23:25
+Saturn	90	Jupiter	04/09/2028	8:58:13
+Mercury	90	Jupiter	04/15/2028	4:28:36
+Mercury	90	Mercury	04/16/2028	15:58:41
+Sun	90	Jupiter	04/18/2028	23:39:14
+Mercury	90	T.Node	04/19/2028	22:38:48
+Sun	90	Mercury	04/22/2028	4:27:06
+Mercury	90	Chiron	04/24/2028	10:16:22
+Mercury	90	Neptune	04/26/2028	13:28:11
+Mars	90	Jupiter	04/27/2028	5:25:43
+Sun	90	T.Node	04/29/2028	5:43:46
+Mercury	90	Venus	05/01/2028	1:33:08
+Mars	90	Mercury	05/01/2028	9:12:56
+Saturn	90	Mercury	05/03/2028	23:11:17
+Venus	90	Uranus	05/06/2028	11:29:54
+Sun	90	Chiron	05/08/2028	12:27:08
+Mars	90	T.Node	05/10/2028	14:18:55
+Sun	90	Neptune	05/12/2028	15:43:03
+Venus	90	Uranus	05/15/2028	4:35:02
+Sun	90	Venus	05/20/2028	13:09:08
+Mars	90	Chiron	05/22/2028	19:29:29
+Mars	90	Neptune	05/28/2028	7:06:43
+Mars	90	Venus	06/07/2028	20:21:25
+Sun	90	Uranus	06/09/2028	13:31:47
+Sun	90	Saturn	06/12/2028	2:55:44
+Jupiter	180	Uranus	06/17/2028	18:50:08
+Sun	180	Pluto	06/22/2028	4:00:17
+Sun	180	Mars	06/26/2028	12:30:25
+Mercury	90	Uranus	07/01/2028	19:38:39
+Mercury	90	Saturn	07/03/2028	15:51:02
+Sun	180	Sun	07/04/2028	18:52:28
+Mars	90	Uranus	07/05/2028	3:06:51
+Saturn	90	T.Node	07/07/2028	19:02:50
+Jupiter	0	Saturn	07/08/2028	3:55:18
+Mars	90	Saturn	07/08/2028	16:15:06
+Mercury	180	Pluto	07/09/2028	18:24:28
+Mercury	180	Mars	07/12/2028	1:33:12
+Mercury	180	Sun	07/16/2028	2:19:56
+Sun	180	Jupiter	07/21/2028	17:07:57
+Mars	180	Pluto	07/22/2028	18:08:55
+Mercury	180	Jupiter	07/23/2028	18:33:02
+Sun	180	Mercury	07/24/2028	23:36:50
+Mercury	180	Mercury	07/25/2028	5:54:47
+Venus	90	Uranus	07/26/2028	8:08:49
+Mercury	180	T.Node	07/28/2028	12:49:56
+Mars	180	Mars	07/28/2028	22:33:10
+Venus	90	Saturn	07/29/2028	7:08:36
+Sun	180	T.Node	08/01/2028	4:01:53
+Mercury	180	Chiron	08/02/2028	0:15:44
+Mercury	180	Neptune	08/04/2028	1:58:28
+Mercury	180	Venus	08/08/2028	4:45:41
+Venus	180	Pluto	08/09/2028	0:01:31
+Mars	180	Sun	08/09/2028	19:34:31
+Sun	180	Chiron	08/10/2028	13:26:01
+Venus	180	Mars	08/13/2028	7:56:34
+Sun	180	Neptune	08/14/2028	17:18:55
+Mercury	180	Uranus	08/19/2028	20:31:20
+Venus	180	Sun	08/21/2028	5:03:29
+Mercury	0	Saturn	08/21/2028	12:08:20
+Sun	180	Venus	08/22/2028	14:59:51
+Mercury	90	Pluto	08/28/2028	12:18:36
+Jupiter	90	Pluto	08/30/2028	18:00:35
+Mercury	90	Mars	08/31/2028	22:00:00
+Mars	180	Jupiter	09/03/2028	18:52:58
+Venus	180	Jupiter	09/05/2028	11:00:19
+Venus	180	Mercury	09/08/2028	7:23:07
+Mercury	90	Sun	09/08/2028	15:44:18
+Mars	180	Mercury	09/08/2028	17:29:42
+Sun	180	Uranus	09/11/2028	10:57:10
+Sun	0	Saturn	09/13/2028	23:13:39
+Venus	180	T.Node	09/14/2028	11:34:08
+Jupiter	90	Mars	09/19/2028	9:54:31
+Mars	180	T.Node	09/19/2028	17:32:21
+Venus	180	Chiron	09/22/2028	9:55:59
+Sun	90	Pluto	09/23/2028	18:52:26
+Venus	180	Neptune	09/25/2028	21:22:15
+Sun	90	Mars	09/28/2028	0:35:02
+Mercury	90	Sun	09/29/2028	2:47:44
+Venus	180	Venus	10/02/2028	10:35:47
+Mars	180	Chiron	10/04/2028	11:22:58
+Sun	90	Sun	10/06/2028	0:52:42
+Mercury	90	Mars	10/06/2028	13:14:06
+Saturn	90	T.Node	10/08/2028	15:38:59
+Mars	180	Neptune	10/11/2028	3:50:40
+Mercury	90	Mars	10/16/2028	5:14:37
+Venus	180	Uranus	10/18/2028	15:16:23
+Venus	0	Saturn	10/20/2028	16:06:40
+Sun	90	Jupiter	10/22/2028	7:55:59
+Mercury	90	Sun	10/23/2028	0:33:10
+Mars	180	Venus	10/24/2028	4:10:42
+Sun	90	Mercury	10/25/2028	11:11:16
+Jupiter	90	Sun	10/26/2028	2:11:26
+Venus	90	Pluto	10/28/2028	14:35:37
+Venus	90	Mars	11/01/2028	0:35:49
+Sun	90	T.Node	11/01/2028	8:14:43
+Mercury	90	Jupiter	11/02/2028	6:14:05
+Mercury	90	Mercury	11/04/2028	3:47:33
+Venus	90	Sun	11/07/2028	11:21:35
+Mercury	90	T.Node	11/08/2028	8:10:43
+Sun	90	Chiron	11/10/2028	7:31:22
+Mercury	90	Chiron	11/13/2028	21:09:42
+Sun	90	Neptune	11/14/2028	6:48:38
+Mercury	90	Neptune	11/16/2028	8:55:06
+Venus	90	Jupiter	11/20/2028	13:52:47
+Mercury	90	Venus	11/21/2028	3:48:51
+Sun	90	Venus	11/21/2028	19:45:06
+Venus	90	Mercury	11/23/2028	2:26:18
+Mars	180	Uranus	11/28/2028	12:26:38
+Venus	90	T.Node	11/28/2028	15:18:35`,
+  Eth: `Mercury	90	Chiron	11/21/2024	3:36:35
+Sun	90	Venus	11/21/2024	22:57:07
+Venus	0	Pluto	11/23/2024	5:13:27
+Venus	90	Uranus	11/29/2024	0:17:01
+Mercury	90	Chiron	11/30/2024	9:59:57
+Sun	90	Neptune	11/30/2024	20:59:33
+Venus	180	Mars	12/01/2024	23:53:26
+Mercury	90	Neptune	12/10/2024	4:08:37
+Sun	90	Chiron	12/12/2024	10:45:31
+Venus	180	Sun	12/13/2024	11:30:23
+T.Node	180	T.Node	12/17/2024	19:59:34
+Venus	180	Mercury	12/20/2024	5:16:14
+Mercury	90	Neptune	12/22/2024	4:14:29
+Sun	90	T.Node	12/23/2024	16:42:00
+Venus	180	Jupiter	12/31/2024	17:13:14
+Venus	90	Saturn	01/01/2025	10:52:30
+Mercury	90	Chiron	01/01/2025	18:41:49
+Venus	180	Venus	01/03/2025	6:09:57
+Sun	0	Pluto	01/03/2025	17:33:40
+Mercury	90	T.Node	01/10/2025	1:16:51
+Sun	90	Uranus	01/10/2025	9:57:40
+Venus	0	Neptune	01/11/2025	23:21:12
+Sun	180	Mars	01/13/2025	20:08:25
+Mercury	0	Pluto	01/17/2025	15:24:32
+Mars	0	Mars	01/21/2025	16:36:07
+Mercury	90	Uranus	01/22/2025	1:31:52
+Mercury	180	Mars	01/24/2025	6:45:57
+Venus	0	Chiron	01/24/2025	6:56:55
+Sun	180	Sun	01/26/2025	20:50:12
+Mars	90	Uranus	01/31/2025	19:22:54
+Mercury	180	Sun	02/01/2025	10:23:55
+Sun	180	Mercury	02/03/2025	8:56:14
+Mercury	180	Mercury	02/05/2025	22:02:29
+Venus	180	T.Node	02/07/2025	16:26:55
+Mercury	180	Jupiter	02/13/2025	1:09:37
+Mercury	90	Saturn	02/13/2025	11:34:50
+Mercury	180	Venus	02/14/2025	12:52:12
+Sun	180	Jupiter	02/15/2025	20:36:13
+Sun	90	Saturn	02/16/2025	15:22:08
+Sun	180	Venus	02/18/2025	13:07:44
+Mercury	0	Neptune	02/19/2025	10:02:33
+Mercury	0	Chiron	02/25/2025	19:49:14
+Chiron	0	Uranus	02/26/2025	11:50:56
+Sun	0	Neptune	02/27/2025	12:17:39
+Saturn	0	Chiron	03/03/2025	8:47:10
+Mercury	180	T.Node	03/05/2025	0:41:30
+Sun	0	Chiron	03/11/2025	5:50:37
+Mars	90	Uranus	03/21/2025	6:34:56
+Sun	180	T.Node	03/22/2025	17:51:33
+Venus	180	T.Node	03/23/2025	7:24:53
+Mercury	180	T.Node	03/26/2025	23:53:07
+Mars	0	Mars	04/02/2025	1:45:44
+Sun	90	Pluto	04/03/2025	2:45:43
+Sun	0	Uranus	04/10/2025	0:55:24
+Sun	90	Mars	04/13/2025	14:17:02
+Mercury	180	T.Node	04/19/2025	7:59:15
+Sun	90	Sun	04/27/2025	4:11:42
+Jupiter	90	Chiron	04/29/2025	0:10:27
+Chiron	90	Mars	04/29/2025	9:05:46
+Mercury	90	Pluto	04/29/2025	13:08:22
+Mercury	0	Uranus	05/04/2025	10:04:31
+Mars	0	Sun	05/04/2025	11:12:46
+Venus	180	T.Node	05/04/2025	17:03:04
+Sun	90	Mercury	05/05/2025	0:33:49
+Mercury	90	Mars	05/06/2025	17:07:17
+Mercury	90	Sun	05/14/2025	13:33:28
+Sun	90	Jupiter	05/18/2025	2:32:46
+Mercury	90	Mercury	05/18/2025	14:35:39
+Sun	180	Saturn	05/18/2025	22:12:43
+Venus	90	Pluto	05/19/2025	13:53:34
+Mars	0	Mercury	05/20/2025	0:39:23
+Sun	90	Venus	05/20/2025	22:10:12
+Uranus	90	Jupiter	05/21/2025	8:27:44
+Mercury	90	Jupiter	05/24/2025	18:56:07
+Mercury	180	Saturn	05/25/2025	3:49:09
+Mercury	90	Venus	05/26/2025	1:20:13
+Venus	0	Uranus	05/27/2025	5:12:03
+Mercury	90	Neptune	05/30/2025	4:33:58
+Sun	90	Neptune	05/30/2025	7:37:02
+Venus	90	Mars	05/30/2025	22:17:25
+Uranus	180	Saturn	06/04/2025	1:12:00
+Mercury	90	Chiron	06/04/2025	13:37:54
+Mercury	90	T.Node	06/10/2025	2:03:53
+Sun	90	Chiron	06/11/2025	14:14:02
+Mars	0	Jupiter	06/12/2025	18:37:09
+Venus	90	Sun	06/13/2025	6:36:32
+Mars	90	Saturn	06/14/2025	4:49:19
+Mercury	180	Pluto	06/16/2025	2:13:02
+Mars	0	Venus	06/17/2025	15:38:15
+Mercury	90	Uranus	06/20/2025	3:58:46
+Jupiter	90	T.Node	06/20/2025	11:36:15
+Venus	90	Mercury	06/20/2025	13:43:27
+Mercury	0	Mars	06/22/2025	10:15:52
+Sun	90	T.Node	06/23/2025	13:54:13
+Venus	90	Jupiter	07/02/2025	6:52:10
+Mercury	0	Sun	07/02/2025	22:03:58
+Venus	180	Saturn	07/03/2025	0:08:18
+Mars	180	Neptune	07/03/2025	10:43:17
+Venus	90	Venus	07/04/2025	18:06:20
+T.Node	0	Chiron	07/05/2025	4:58:40
+Sun	180	Pluto	07/05/2025	8:56:53
+Uranus	90	Venus	07/12/2025	2:33:32
+Sun	90	Uranus	07/12/2025	12:25:39
+Venus	90	Neptune	07/12/2025	20:52:36
+Mercury	0	Mercury	07/13/2025	21:09:04
+Sun	0	Mars	07/16/2025	4:12:05
+Mercury	0	Mercury	07/22/2025	7:25:12
+Mars	180	Chiron	07/23/2025	5:22:19
+Venus	90	Chiron	07/23/2025	5:50:49
+Sun	0	Sun	07/30/2025	1:18:15
+Venus	90	T.Node	08/02/2025	4:24:17
+Mercury	0	Sun	08/03/2025	9:12:31
+Sun	0	Mercury	08/07/2025	0:25:49
+Jupiter	180	Pluto	08/10/2025	7:11:49
+Mars	0	T.Node	08/10/2025	18:56:54
+Venus	180	Pluto	08/11/2025	19:45:57
+Venus	90	Uranus	08/17/2025	14:27:47
+Mercury	0	Sun	08/18/2025	8:24:22
+Sun	0	Jupiter	08/20/2025	4:14:38
+Venus	0	Mars	08/20/2025	13:06:18
+Sun	90	Saturn	08/20/2025	23:54:35
+Sun	0	Venus	08/22/2025	23:48:51
+Mercury	0	Mercury	08/24/2025	19:15:17
+Mars	90	Pluto	08/28/2025	11:22:27
+Venus	0	Sun	08/31/2025	15:39:02
+Mercury	0	Jupiter	09/01/2025	3:43:33
+Sun	180	Neptune	09/01/2025	8:06:34
+Mercury	90	Saturn	09/01/2025	13:45:54
+Mercury	0	Venus	09/02/2025	14:01:50
+Venus	0	Mercury	09/06/2025	23:34:28
+Mercury	180	Neptune	09/07/2025	6:06:32
+Mars	180	Uranus	09/07/2025	22:25:51
+Mars	90	Mars	09/13/2025	5:23:49
+Mercury	180	Chiron	09/13/2025	9:51:34
+Sun	180	Chiron	09/13/2025	10:46:52
+Jupiter	90	Uranus	09/16/2025	15:32:45
+Venus	0	Jupiter	09/17/2025	9:26:50
+Venus	90	Saturn	09/18/2025	0:58:33
+Venus	0	Venus	09/19/2025	14:47:46
+Mercury	0	T.Node	09/19/2025	16:59:26
+Sun	0	T.Node	09/25/2025	3:57:54
+Mercury	90	Pluto	09/26/2025	6:56:20
+Venus	180	Neptune	09/26/2025	23:40:19
+Mercury	180	Uranus	09/30/2025	11:33:48
+Mercury	90	Mars	10/02/2025	16:36:47
+Mars	90	Sun	10/02/2025	22:26:51
+Venus	180	Chiron	10/06/2025	12:38:23
+Sun	90	Pluto	10/06/2025	14:39:13
+Mercury	90	Sun	10/11/2025	12:27:24
+Sun	180	Uranus	10/13/2025	12:07:47
+Mars	90	Mercury	10/14/2025	0:06:45
+Jupiter	0	Mars	10/15/2025	13:45:49
+Venus	0	T.Node	10/15/2025	18:22:03
+Mercury	90	Mercury	10/16/2025	22:53:58
+Sun	90	Mars	10/17/2025	0:34:29
+Venus	90	Pluto	10/24/2025	19:17:21
+Mercury	90	Jupiter	10/27/2025	0:48:56
+Mercury	0	Saturn	10/27/2025	18:01:03
+Mercury	90	Venus	10/29/2025	14:01:48
+Venus	180	Uranus	10/30/2025	6:15:21
+Sun	90	Sun	10/30/2025	8:02:51
+Mars	90	Jupiter	10/31/2025	22:59:14
+Venus	90	Mars	11/02/2025	1:13:54
+Mars	0	Saturn	11/02/2025	1:32:19
+Uranus	90	Venus	11/02/2025	15:50:37
+Mars	90	Venus	11/04/2025	18:05:14
+Chiron	90	Mars	11/06/2025	6:21:49
+Sun	90	Mercury	11/06/2025	22:47:30
+Venus	90	Sun	11/12/2025	15:20:37
+Mars	90	Neptune	11/17/2025	5:48:35
+Venus	90	Mercury	11/18/2025	17:07:17
+Mercury	90	Venus	11/18/2025	21:31:17
+Sun	90	Jupiter	11/19/2025	12:08:24
+Sun	0	Saturn	11/20/2025	6:54:00
+Mercury	0	Saturn	11/20/2025	7:44:25
+Mercury	90	Jupiter	11/20/2025	21:43:54
+Sun	90	Venus	11/22/2025	4:36:01
+Venus	90	Jupiter	11/28/2025	18:27:50
+Venus	0	Saturn	11/29/2025	9:31:49
+Venus	90	Venus	11/30/2025	22:15:05
+Sun	90	Neptune	12/01/2025	2:40:51
+Mars	90	Chiron	12/03/2025	4:45:20
+Venus	90	Neptune	12/08/2025	2:30:39
+Jupiter	0	Mars	12/08/2025	8:33:43
+Mercury	90	Jupiter	12/09/2025	17:52:35
+Mercury	0	Saturn	12/10/2025	10:22:37
+Mercury	90	Venus	12/12/2025	0:45:46
+Sun	90	Chiron	12/12/2025	16:34:19
+Venus	90	Chiron	12/17/2025	10:37:46
+Mars	90	T.Node	12/18/2025	10:54:01
+Mercury	90	Neptune	12/18/2025	18:44:58
+Uranus	180	Saturn	12/20/2025	23:07:18
+Sun	90	T.Node	12/23/2025	22:23:28
+Venus	90	T.Node	12/26/2025	12:50:33
+Mercury	90	Chiron	12/26/2025	20:11:55
+Mars	0	Pluto	01/02/2026	5:09:52
+Mercury	90	T.Node	01/03/2026	9:13:31
+Sun	0	Pluto	01/03/2026	23:22:54
+Venus	0	Pluto	01/04/2026	11:24:08
+Jupiter	90	Uranus	01/07/2026	9:44:00
+Venus	90	Uranus	01/09/2026	21:20:52
+Mercury	0	Pluto	01/10/2026	14:00:22
+Sun	90	Uranus	01/10/2026	15:49:31
+Mars	90	Uranus	01/11/2026	1:26:50
+Venus	180	Mars	01/12/2026	15:53:36
+Sun	180	Mars	01/14/2026	1:58:27
+Mercury	90	Uranus	01/14/2026	19:59:31
+Mars	180	Mars	01/15/2026	13:33:19
+Mercury	180	Mars	01/16/2026	23:23:04
+Venus	180	Sun	01/23/2026	4:58:17
+Mercury	180	Sun	01/24/2026	21:26:17
+Uranus	90	Jupiter	01/25/2026	13:57:33
+Sun	180	Sun	01/27/2026	2:34:52
+Venus	180	Mercury	01/29/2026	6:37:09
+Mercury	180	Mercury	01/29/2026	7:05:18
+T.Node	0	Neptune	01/30/2026	4:30:12
+Mars	180	Sun	02/01/2026	13:44:07
+Sun	180	Mercury	02/03/2026	14:47:45
+Mercury	180	Jupiter	02/05/2026	10:43:59
+Mercury	90	Saturn	02/05/2026	21:27:22
+Mercury	180	Venus	02/06/2026	23:40:56
+Venus	180	Jupiter	02/08/2026	8:23:28
+Venus	90	Saturn	02/08/2026	23:30:16
+Venus	180	Venus	02/10/2026	12:20:59
+Mars	180	Mercury	02/11/2026	6:54:59
+Mercury	0	Neptune	02/12/2026	7:15:04
+Uranus	90	Jupiter	02/13/2026	8:24:06
+Sun	180	Jupiter	02/16/2026	2:23:46
+Sun	90	Saturn	02/16/2026	21:08:52
+Venus	0	Neptune	02/17/2026	17:23:46
+Sun	180	Venus	02/18/2026	18:52:53
+Mercury	0	Chiron	02/21/2026	18:57:59
+Venus	0	Chiron	02/27/2026	3:09:49
+Mars	180	Jupiter	02/27/2026	8:03:50
+Chiron	90	Mars	02/27/2026	14:12:42
+Sun	0	Neptune	02/27/2026	18:03:55
+Mars	90	Saturn	02/28/2026	8:06:00
+Mercury	0	Chiron	03/02/2026	16:46:57
+Mars	180	Venus	03/02/2026	18:41:18
+Saturn	180	T.Node	03/06/2026	19:32:35
+Venus	180	T.Node	03/08/2026	7:43:33
+Sun	0	Chiron	03/11/2026	11:43:03
+Mars	0	Neptune	03/14/2026	5:42:17
+Mercury	0	Neptune	03/16/2026	21:56:18
+Venus	90	Pluto	03/17/2026	9:11:16
+Uranus	180	Saturn	03/20/2026	1:10:20
+Venus	0	Uranus	03/22/2026	21:12:56
+Sun	180	T.Node	03/22/2026	23:34:43
+Mercury	0	Neptune	03/24/2026	17:27:24
+Venus	90	Mars	03/25/2026	16:56:31
+Mars	0	Chiron	03/29/2026	4:43:20
+Sun	90	Pluto	04/03/2026	8:36:10
+Venus	90	Sun	04/05/2026	11:16:58
+Neptune	180	T.Node	04/07/2026	2:17:19
+Mercury	0	Chiron	04/08/2026	2:02:09
+Sun	0	Uranus	04/10/2026	6:46:47
+Venus	90	Mercury	04/11/2026	16:25:37
+Mars	180	T.Node	04/12/2026	20:41:03
+Sun	90	Mars	04/13/2026	20:05:30
+Mercury	180	T.Node	04/16/2026	18:08:29
+Venus	90	Jupiter	04/22/2026	0:43:06
+Venus	180	Saturn	04/22/2026	16:16:30
+Mercury	90	Pluto	04/23/2026	22:56:13
+Venus	90	Venus	04/24/2026	6:13:04
+Mars	90	Pluto	04/27/2026	9:52:54
+Sun	90	Sun	04/27/2026	9:56:01
+Mercury	0	Uranus	04/27/2026	21:51:49
+Uranus	90	Venus	04/29/2026	19:05:01
+Mercury	90	Mars	04/29/2026	20:11:24
+Venus	90	Neptune	05/01/2026	16:49:01
+Sun	90	Mercury	05/05/2026	6:25:19
+Mars	0	Uranus	05/06/2026	7:24:58
+Mercury	90	Sun	05/06/2026	16:42:57
+Mercury	90	Mercury	05/10/2026	8:47:16
+Mars	90	Mars	05/10/2026	21:25:33
+Venus	90	Chiron	05/11/2026	10:40:33
+Jupiter	90	Uranus	05/11/2026	11:47:50
+Mercury	90	Jupiter	05/16/2026	4:57:54
+Mercury	180	Saturn	05/16/2026	13:37:41
+Mercury	90	Venus	05/17/2026	10:45:19
+Sun	90	Jupiter	05/18/2026	8:16:28
+Sun	180	Saturn	05/19/2026	3:55:48
+Venus	90	T.Node	05/20/2026	23:59:52
+Sun	90	Venus	05/21/2026	3:52:17
+Mercury	90	Neptune	05/21/2026	15:11:17
+Mercury	90	Chiron	05/27/2026	10:23:11
+Mars	90	Sun	05/28/2026	12:36:13
+Venus	180	Pluto	05/30/2026	11:14:40
+Sun	90	Neptune	05/30/2026	13:25:37
+Jupiter	0	Mars	05/31/2026	11:13:03
+Mercury	90	T.Node	06/02/2026	21:05:32
+Venus	90	Uranus	06/05/2026	5:52:24
+Mars	90	Mercury	06/07/2026	19:58:03
+Venus	0	Mars	06/08/2026	5:11:12
+Mercury	180	Pluto	06/10/2026	17:16:17
+Sun	90	Chiron	06/11/2026	20:02:51
+Mercury	90	Uranus	06/17/2026	2:58:44
+Venus	0	Sun	06/19/2026	14:32:18
+Saturn	90	Pluto	06/20/2026	23:30:24
+Mercury	0	Mars	06/21/2026	21:27:08
+Sun	90	T.Node	06/23/2026	19:37:52
+Mars	90	Jupiter	06/25/2026	5:32:42
+Venus	0	Mercury	06/26/2026	5:39:58
+Mars	180	Saturn	06/26/2026	7:58:40
+Mars	90	Venus	06/29/2026	0:35:03
+Sun	180	Pluto	07/05/2026	14:48:59
+Venus	0	Jupiter	07/07/2026	9:35:59
+Mercury	0	Mars	07/07/2026	14:39:34
+Venus	90	Saturn	07/08/2026	2:31:57
+Venus	0	Venus	07/09/2026	19:54:43
+Mars	90	Neptune	07/11/2026	19:16:10
+Sun	90	Uranus	07/12/2026	18:13:07
+Mercury	90	Uranus	07/13/2026	7:09:43
+T.Node	180	Venus	07/16/2026	5:01:06
+Sun	0	Mars	07/16/2026	9:55:45
+T.Node	180	Venus	07/17/2026	17:28:07
+Venus	180	Neptune	07/18/2026	0:21:37
+T.Node	180	Venus	07/23/2026	21:50:08
+Mars	90	Chiron	07/28/2026	20:19:47
+Venus	180	Chiron	07/28/2026	23:26:59
+Sun	0	Sun	07/30/2026	7:08:26
+Mercury	90	Uranus	08/02/2026	1:16:04
+Jupiter	0	Sun	08/02/2026	4:18:33
+Mercury	0	Mars	08/05/2026	7:33:22
+Sun	0	Mercury	08/07/2026	6:17:01
+Venus	0	T.Node	08/09/2026	3:26:51
+Mercury	0	Sun	08/13/2026	19:58:46
+Mars	90	T.Node	08/14/2026	22:57:46
+Mercury	0	Mercury	08/17/2026	19:42:44
+Sun	0	Jupiter	08/20/2026	9:57:52
+Venus	90	Pluto	08/20/2026	21:12:23
+Sun	90	Saturn	08/21/2026	5:38:14
+Sun	0	Venus	08/23/2026	5:33:54
+Mercury	0	Jupiter	08/24/2026	3:01:56
+Mercury	90	Saturn	08/24/2026	12:29:14
+Mercury	0	Venus	08/25/2026	11:36:30
+Venus	180	Uranus	08/28/2026	15:28:13
+Mercury	180	Neptune	08/30/2026	2:16:13
+Saturn	90	Pluto	08/31/2026	20:34:04
+Mars	180	Pluto	09/01/2026	8:59:21
+Sun	180	Neptune	09/01/2026	13:58:45
+Venus	90	Mars	09/01/2026	22:35:42
+Mercury	180	Chiron	09/05/2026	10:10:59
+Jupiter	0	Mercury	09/06/2026	12:11:39
+Mercury	0	T.Node	09/12/2026	1:09:20
+Mars	90	Uranus	09/12/2026	6:22:50
+Sun	180	Chiron	09/13/2026	16:30:14
+Mars	0	Mars	09/17/2026	23:12:23
+Mercury	90	Pluto	09/19/2026	1:47:35
+Mercury	180	Uranus	09/23/2026	14:45:44
+Venus	90	Sun	09/24/2026	23:22:01
+Sun	0	T.Node	09/25/2026	9:46:08
+Mercury	90	Mars	09/26/2026	0:54:09
+Mercury	90	Sun	10/06/2026	2:23:25
+Sun	90	Pluto	10/06/2026	20:28:41
+Mars	0	Sun	10/10/2026	14:42:23
+Venus	90	Sun	10/11/2026	4:19:45
+Mercury	90	Mercury	10/13/2026	2:56:57
+Sun	180	Uranus	10/13/2026	17:51:19
+T.Node	90	Saturn	10/14/2026	14:08:23
+Neptune	180	T.Node	10/16/2026	21:54:58
+Sun	90	Mars	10/17/2026	6:17:30
+Mars	0	Mercury	10/24/2026	14:48:36
+T.Node	180	Jupiter	10/26/2026	22:38:55
+Sun	90	Sun	10/30/2026	13:55:27
+Mercury	90	Mercury	11/02/2026	10:30:48
+Venus	90	Mars	11/06/2026	12:37:35
+Sun	90	Mercury	11/07/2026	4:35:34
+Mercury	90	Sun	11/08/2026	18:37:46
+Mercury	90	Sun	11/18/2026	18:05:55
+Sun	90	Jupiter	11/19/2026	17:53:47
+Mars	0	Jupiter	11/19/2026	20:42:40
+Sun	0	Saturn	11/20/2026	12:40:03
+Venus	90	Mars	11/21/2026	13:38:46
+Mars	90	Saturn	11/21/2026	17:19:35
+Sun	90	Venus	11/22/2026	10:23:58
+Mercury	90	Mercury	11/25/2026	17:49:20
+Mars	0	Venus	11/26/2026	10:20:45
+Sun	90	Neptune	12/01/2026	8:33:07
+Mercury	90	Jupiter	12/04/2026	14:38:42
+Mercury	0	Saturn	12/05/2026	3:16:19
+Mercury	90	Venus	12/06/2026	9:54:08
+Mercury	90	Neptune	12/12/2026	7:49:32
+Sun	90	Chiron	12/12/2026	22:17:36
+Venus	90	Sun	12/14/2026	4:15:51
+Mercury	90	Chiron	12/19/2026	22:09:36
+Venus	90	Mercury	12/22/2026	22:48:51
+Sun	90	T.Node	12/24/2026	4:12:45
+Mercury	90	T.Node	12/27/2026	5:24:00
+Mars	180	Neptune	12/27/2026	8:35:57
+Mercury	0	Pluto	01/03/2027	6:21:54
+Sun	0	Pluto	01/04/2027	5:11:02
+Venus	90	Jupiter	01/04/2027	20:51:59
+Venus	0	Saturn	01/05/2027	15:15:33
+Mercury	90	Uranus	01/07/2027	10:40:26
+Venus	90	Venus	01/07/2027	11:44:38
+Mercury	180	Mars	01/09/2027	13:25:33
+Sun	90	Uranus	01/10/2027	21:31:27
+Sun	180	Mars	01/14/2027	7:39:47
+Venus	90	Neptune	01/15/2027	23:05:51
+Mercury	180	Sun	01/17/2027	11:18:24
+Mercury	180	Mercury	01/22/2027	0:03:55
+Mars	180	Neptune	01/23/2027	23:04:22
+Venus	90	Chiron	01/26/2027	14:06:26
+Sun	180	Sun	01/27/2027	8:24:10
+Mercury	180	Jupiter	01/30/2027	1:49:47
+Mercury	90	Saturn	01/30/2027	15:40:33
+Mercury	180	Venus	02/01/2027	3:32:15
+Sun	180	Mercury	02/03/2027	20:32:01
+Neptune	180	T.Node	02/05/2027	7:48:34
+Venus	90	T.Node	02/05/2027	15:22:24
+Venus	0	Pluto	02/15/2027	8:08:00
+Sun	180	Jupiter	02/16/2027	8:03:27
+Sun	90	Saturn	02/17/2027	2:49:05
+Mercury	180	Venus	02/18/2027	5:44:28
+Sun	180	Venus	02/19/2027	0:34:35
+Mercury	90	Saturn	02/19/2027	22:33:16
+Mercury	180	Jupiter	02/20/2027	15:28:41
+Mars	0	Venus	02/20/2027	23:27:53
+Venus	90	Uranus	02/21/2027	3:32:26
+Venus	180	Mars	02/24/2027	2:32:58
+Mars	90	Saturn	02/25/2027	21:10:46
+Mars	0	Jupiter	02/27/2027	23:10:28
+Sun	0	Neptune	02/27/2027	23:49:35
+Saturn	90	Pluto	03/06/2027	5:33:28
+Venus	180	Sun	03/07/2027	6:36:27
+Sun	0	Chiron	03/11/2027	17:18:31
+Venus	180	Mercury	03/13/2027	15:42:38
+Mercury	180	Jupiter	03/15/2027	19:37:26
+Mercury	90	Saturn	03/16/2027	15:26:41
+Mercury	180	Venus	03/18/2027	12:50:01
+Sun	180	T.Node	03/23/2027	5:15:53
+Venus	180	Jupiter	03/24/2027	4:23:23
+Venus	90	Saturn	03/24/2027	20:07:50
+Mercury	0	Neptune	03/26/2027	1:59:23
+Venus	180	Venus	03/26/2027	10:28:31
+Venus	0	Neptune	04/02/2027	22:05:41
+Mercury	0	Chiron	04/03/2027	6:54:10
+Sun	90	Pluto	04/03/2027	14:14:57
+Mercury	180	T.Node	04/10/2027	7:46:31
+Sun	0	Uranus	04/10/2027	12:19:56
+Venus	0	Chiron	04/12/2027	15:21:23
+Sun	90	Mars	04/14/2027	1:38:35
+Mercury	90	Pluto	04/16/2027	14:19:37
+Mercury	0	Uranus	04/20/2027	3:29:34
+Mercury	90	Mars	04/21/2027	21:37:06
+Venus	180	T.Node	04/22/2027	2:09:01
+Sun	90	Sun	04/27/2027	15:38:16
+Mercury	90	Sun	04/28/2027	6:45:00
+Saturn	0	Uranus	04/30/2027	7:37:55
+Venus	90	Pluto	05/01/2027	8:41:56
+Mercury	90	Mercury	05/01/2027	19:50:42
+Sun	90	Mercury	05/05/2027	12:01:53
+Venus	0	Uranus	05/06/2027	23:17:59
+Mars	0	Jupiter	05/07/2027	9:19:15
+Mercury	90	Jupiter	05/07/2027	18:35:07
+Mercury	180	Saturn	05/08/2027	3:47:23
+Mercury	90	Venus	05/09/2027	2:27:45
+Mars	90	Saturn	05/09/2027	17:40:53
+Venus	90	Mars	05/09/2027	20:11:24
+Mercury	90	Neptune	05/13/2027	19:06:00
+Mars	0	Venus	05/15/2027	2:24:23
+Sun	90	Jupiter	05/18/2027	13:54:59
+T.Node	180	Mercury	05/18/2027	20:25:10
+Sun	180	Saturn	05/19/2027	9:35:20
+Venus	90	Sun	05/20/2027	17:58:10
+Mercury	90	Chiron	05/21/2027	1:01:05
+Sun	90	Venus	05/21/2027	9:33:58
+Venus	90	Mercury	05/27/2027	0:19:37
+Sun	90	Neptune	05/30/2027	19:07:59
+Saturn	90	Mars	05/31/2027	7:14:06
+Mercury	90	T.Node	05/31/2027	11:30:13
+Mars	180	Neptune	06/05/2027	11:09:55
+Venus	90	Jupiter	06/06/2027	9:17:03
+Venus	180	Saturn	06/07/2027	0:49:21
+Venus	90	Venus	06/08/2027	14:41:31
+Sun	90	Chiron	06/12/2027	1:39:25
+Venus	90	Neptune	06/16/2027	0:19:21
+Mercury	90	T.Node	06/21/2027	21:56:09
+Sun	90	T.Node	06/24/2027	1:25:19
+Venus	90	Chiron	06/25/2027	15:15:37
+Mars	180	Chiron	06/28/2027	20:47:42
+Venus	90	T.Node	07/04/2027	23:43:04
+Sun	180	Pluto	07/05/2027	20:29:49
+Sun	90	Uranus	07/12/2027	23:55:21
+Jupiter	0	Jupiter	07/13/2027	13:49:10
+Venus	180	Pluto	07/14/2027	3:55:34
+Mercury	90	T.Node	07/15/2027	14:05:45
+Sun	0	Mars	07/16/2027	15:42:05
+Jupiter	90	Saturn	07/17/2027	14:31:08
+Mars	0	T.Node	07/19/2027	9:16:27
+Venus	90	Uranus	07/19/2027	17:02:58
+Venus	0	Mars	07/22/2027	13:08:44
+Mercury	180	Pluto	07/24/2027	11:48:11
+Jupiter	0	Venus	07/27/2027	3:32:34
+Mercury	90	Uranus	07/28/2027	11:06:10
+Mercury	0	Mars	07/30/2027	7:43:49
+Sun	0	Sun	07/30/2027	12:57:38
+Venus	0	Sun	08/02/2027	7:32:34
+Uranus	90	Neptune	08/04/2027	16:30:43
+Mercury	0	Sun	08/05/2027	21:28:17
+Mars	90	Pluto	08/07/2027	5:52:23
+Sun	0	Mercury	08/07/2027	12:01:01
+Venus	0	Mercury	08/08/2027	11:47:49
+Mercury	0	Mercury	08/09/2027	13:38:13
+Mercury	0	Jupiter	08/15/2027	19:51:25
+Mercury	90	Saturn	08/16/2027	5:32:38
+Mercury	0	Venus	08/17/2027	5:20:30
+Mars	180	Uranus	08/18/2027	4:37:02
+Venus	0	Jupiter	08/18/2027	17:10:42
+Venus	90	Saturn	08/19/2027	8:29:20
+Sun	0	Jupiter	08/20/2027	15:52:35
+Venus	0	Venus	08/20/2027	21:48:01
+Sun	90	Saturn	08/21/2027	11:33:19
+Mercury	180	Neptune	08/22/2027	0:58:28
+Sun	0	Venus	08/23/2027	11:29:21
+Mars	90	Mars	08/23/2027	16:26:46
+Venus	180	Neptune	08/28/2027	4:43:44
+Mercury	180	Chiron	08/28/2027	18:57:49
+Sun	180	Neptune	09/01/2027	19:47:04
+Mercury	0	T.Node	09/04/2027	23:47:01
+Venus	180	Chiron	09/06/2027	16:09:03
+Jupiter	180	Neptune	09/07/2027	8:08:15
+Mercury	90	Pluto	09/12/2027	20:38:09
+Mars	90	Sun	09/12/2027	22:40:33
+Sun	180	Chiron	09/13/2027	22:22:20
+Venus	0	T.Node	09/15/2027	21:28:03
+Mercury	180	Uranus	09/18/2027	4:47:40
+Mercury	90	Mars	09/21/2027	5:05:04
+Mars	90	Mercury	09/24/2027	5:05:03
+Venus	90	Pluto	09/24/2027	22:52:02
+Sun	0	T.Node	09/25/2027	15:40:50
+Venus	180	Uranus	09/30/2027	10:25:32
+Venus	90	Mars	10/03/2027	5:46:40
+Sun	90	Pluto	10/07/2027	2:15:56
+Mars	90	Jupiter	10/12/2027	8:38:05
+Mars	0	Saturn	10/13/2027	11:22:29
+Venus	90	Sun	10/13/2027	21:51:07
+Sun	180	Uranus	10/13/2027	23:43:39
+Mars	90	Venus	10/16/2027	4:20:25
+Sun	90	Mars	10/17/2027	12:12:50
+Venus	90	Mercury	10/20/2027	1:06:37
+Mercury	90	Mars	10/21/2027	6:11:25
+Saturn	90	Mars	10/23/2027	8:07:56
+Mercury	180	Uranus	10/24/2027	23:20:22
+Uranus	90	Neptune	10/27/2027	13:17:21
+T.Node	180	Sun	10/28/2027	15:53:05
+Mars	90	Neptune	10/28/2027	17:17:41
+Venus	90	Jupiter	10/30/2027	5:13:56
+Sun	90	Sun	10/30/2027	19:43:23
+Venus	0	Saturn	10/30/2027	20:28:50
+Mercury	180	Uranus	11/01/2027	4:04:12
+Venus	90	Venus	11/01/2027	9:38:57
+Jupiter	180	Chiron	11/04/2027	23:32:22
+Mercury	90	Mars	11/05/2027	3:52:08
+Sun	90	Mercury	11/07/2027	10:21:57
+Venus	90	Neptune	11/08/2027	16:08:01
+Mars	90	Chiron	11/13/2027	16:25:56
+Mercury	90	Sun	11/14/2027	20:35:08
+Venus	90	Chiron	11/18/2027	3:29:51
+Mercury	90	Mercury	11/19/2027	18:16:09
+Sun	90	Jupiter	11/19/2027	23:47:53
+Sun	0	Saturn	11/20/2027	18:33:53
+Sun	90	Venus	11/22/2027	16:16:41
+Venus	90	T.Node	11/27/2027	9:08:32
+Mercury	90	Jupiter	11/27/2027	18:20:04
+Mercury	0	Saturn	11/28/2027	6:20:00
+Mars	90	T.Node	11/28/2027	21:43:17
+Mercury	90	Venus	11/29/2027	11:36:01
+Sun	90	Neptune	12/01/2027	14:17:49
+Mercury	90	Neptune	12/05/2027	5:17:17
+Venus	0	Pluto	12/06/2027	11:17:10
+Venus	90	Uranus	12/11/2027	23:36:41
+Mercury	90	Chiron	12/12/2027	16:51:52
+Sun	90	Chiron	12/13/2027	4:07:52
+Mars	0	Pluto	12/13/2027	14:31:47
+Venus	180	Mars	12/14/2027	19:27:23
+Mercury	90	T.Node	12/19/2027	22:48:33
+Mars	90	Uranus	12/22/2027	9:45:35
+Sun	90	T.Node	12/24/2027	10:02:40
+Venus	180	Sun	12/25/2027	14:00:13
+Mars	180	Mars	12/26/2027	21:17:49
+Mercury	0	Pluto	12/26/2027	23:49:06
+Mercury	90	Uranus	12/31/2027	5:22:03
+Venus	180	Mercury	12/31/2027	19:11:15
+Mercury	180	Mars	01/02/2028	9:23:18
+Sun	0	Pluto	01/04/2028	10:55:01
+Mercury	180	Sun	01/10/2028	21:20:54
+Sun	90	Uranus	01/11/2028	3:20:44
+Venus	180	Jupiter	01/11/2028	3:50:42
+Venus	90	Saturn	01/11/2028	19:26:47
+Mars	180	Sun	01/12/2028	19:17:18
+Venus	180	Venus	01/13/2028	9:30:35
+Sun	180	Mars	01/14/2028	13:31:45
+Mercury	180	Mercury	01/16/2028	15:41:33
+Venus	0	Neptune	01/20/2028	20:55:33
+Mars	180	Mercury	01/22/2028	11:15:45
+Sun	180	Sun	01/27/2028	14:09:41
+Venus	0	Chiron	01/30/2028	16:47:39
+Mercury	180	Mercury	01/31/2028	18:09:43
+Sun	180	Mercury	02/04/2028	2:16:52
+Mercury	180	Sun	02/07/2028	8:54:06
+Mars	180	Jupiter	02/07/2028	10:38:16
+Mars	90	Saturn	02/08/2028	10:34:29
+Venus	180	T.Node	02/09/2028	9:56:56
+Mars	180	Venus	02/10/2028	20:55:42
+Pluto	180	Sun	02/11/2028	4:23:23
+Sun	180	Jupiter	02/16/2028	13:56:55
+Sun	90	Saturn	02/17/2028	8:42:26
+Venus	90	Pluto	02/19/2028	3:41:06
+Sun	180	Venus	02/19/2028	6:26:59
+Saturn	90	Mars	02/20/2028	15:28:28
+Mars	0	Neptune	02/22/2028	6:59:14
+Mercury	180	Sun	02/22/2028	12:16:59
+Venus	0	Uranus	02/25/2028	3:59:07
+Sun	0	Neptune	02/28/2028	5:34:29
+Venus	90	Mars	02/28/2028	6:52:33
+Mercury	180	Mercury	03/01/2028	13:22:24
+Mars	0	Chiron	03/08/2028	5:07:04
+Sun	0	Chiron	03/10/2028	23:08:59
+Mercury	180	Jupiter	03/11/2028	11:03:35
+Venus	90	Sun	03/11/2028	11:51:43
+Mercury	90	Saturn	03/12/2028	0:27:28
+Mercury	180	Venus	03/13/2028	8:36:48
+Venus	90	Mercury	03/18/2028	20:29:43
+Mercury	0	Neptune	03/19/2028	7:27:26
+Sun	180	T.Node	03/22/2028	11:06:06
+Mars	180	T.Node	03/22/2028	20:36:47
+Jupiter	180	Chiron	03/25/2028	1:42:01
+Mercury	0	Chiron	03/26/2028	9:39:35
+Venus	90	Jupiter	03/31/2028	23:07:28
+Mercury	180	T.Node	04/01/2028	17:49:29
+Venus	180	Saturn	04/01/2028	20:07:19
+Sun	90	Pluto	04/02/2028	19:59:46
+Venus	90	Venus	04/04/2028	0:14:37
+Mars	90	Pluto	04/06/2028	9:40:26
+Mercury	90	Pluto	04/07/2028	12:47:02
+Sun	0	Uranus	04/09/2028	18:11:10
+Mercury	0	Uranus	04/10/2028	20:57:13
+Mercury	90	Mars	04/12/2028	13:10:30
+Sun	90	Mars	04/13/2028	7:32:27
+Venus	90	Neptune	04/15/2028	7:11:54
+Mars	0	Uranus	04/15/2028	7:14:16
+Mercury	90	Sun	04/18/2028	20:19:18
+Mars	90	Mars	04/19/2028	21:16:58
+Mercury	90	Mercury	04/22/2028	13:33:34
+Sun	90	Sun	04/26/2028	21:23:54
+Mercury	90	Jupiter	04/29/2028	10:16:58
+Mercury	180	Saturn	04/29/2028	21:50:25
+Mercury	90	Venus	05/01/2028	2:57:48
+Sun	90	Mercury	05/04/2028	17:48:41
+Mars	90	Sun	05/07/2028	12:34:18
+Mercury	90	Neptune	05/08/2028	0:46:09
+Uranus	90	Neptune	05/17/2028	6:25:00
+Sun	90	Jupiter	05/17/2028	19:48:21
+Mars	90	Mercury	05/17/2028	19:51:21
+Sun	180	Saturn	05/18/2028	15:28:12
+Sun	90	Venus	05/20/2028	15:25:18
+Sun	90	Neptune	05/30/2028	0:53:21
+T.Node	180	Mars	06/02/2028	21:38:47
+Mars	90	Jupiter	06/04/2028	4:41:15
+Venus	90	Neptune	06/04/2028	21:05:57
+Mars	180	Saturn	06/05/2028	7:02:04
+Mercury	90	Neptune	06/07/2028	14:39:00
+Mars	90	Venus	06/07/2028	23:24:28
+Sun	90	Chiron	06/11/2028	7:34:50
+Saturn	90	Sun	06/12/2028	6:41:04
+Chiron	90	Sun	06/16/2028	16:44:23
+Mercury	90	Neptune	06/20/2028	9:40:26
+Mars	90	Neptune	06/20/2028	16:26:49
+Sun	90	T.Node	06/23/2028	7:13:57
+Jupiter	180	Chiron	07/02/2028	11:16:40
+Mercury	90	Chiron	07/03/2028	2:20:02
+Sun	180	Pluto	07/05/2028	2:21:38
+Mars	90	Chiron	07/07/2028	13:23:00
+Mercury	90	T.Node	07/10/2028	9:08:10
+Venus	90	Neptune	07/12/2028	0:15:19
+Sun	90	Uranus	07/12/2028	5:51:41
+Sun	0	Mars	07/15/2028	21:37:29
+Mercury	180	Pluto	07/16/2028	5:50:29
+Mercury	90	Uranus	07/19/2028	12:31:08
+Mercury	0	Mars	07/21/2028	4:00:06
+Mars	90	T.Node	07/24/2028	8:41:52
+Mercury	0	Sun	07/27/2028	10:22:15
+Venus	90	Chiron	07/28/2028	9:05:16
+Sun	0	Sun	07/29/2028	18:45:00
+Mercury	0	Mercury	07/31/2028	3:55:40
+Sun	0	Mercury	08/06/2028	17:55:17
+Mercury	0	Jupiter	08/06/2028	18:03:33
+Mercury	90	Saturn	08/07/2028	4:25:45
+Mercury	0	Venus	08/08/2028	5:58:45
+Venus	90	T.Node	08/10/2028	3:26:42
+Mars	180	Pluto	08/10/2028	6:25:04
+Mercury	180	Neptune	08/13/2028	11:30:23
+Pluto	180	Sun	08/15/2028	9:42:33
+Sun	0	Jupiter	08/19/2028	21:41:40
+Mars	90	Uranus	08/20/2028	16:43:02
+Sun	90	Saturn	08/20/2028	17:21:29
+Mercury	180	Chiron	08/20/2028	23:32:12
+Venus	180	Pluto	08/21/2028	12:01:42
+Sun	0	Venus	08/22/2028	17:15:49
+Mars	0	Mars	08/26/2028	2:22:21
+Venus	90	Uranus	08/28/2028	1:06:05
+Mercury	0	T.Node	08/29/2028	8:56:10
+Venus	0	Mars	08/31/2028	7:48:29
+Sun	180	Neptune	09/01/2028	1:36:02
+Jupiter	0	T.Node	09/04/2028	23:01:21
+Mercury	90	Pluto	09/09/2028	0:15:39
+Venus	0	Sun	09/12/2028	10:37:26
+Sun	180	Chiron	09/13/2028	4:14:42
+Mars	0	Sun	09/16/2028	1:14:45
+Venus	0	Mercury	09/19/2028	5:01:46
+T.Node	90	Uranus	09/21/2028	22:44:28
+Sun	0	T.Node	09/24/2028	21:24:01
+Mars	0	Mercury	09/28/2028	10:24:47
+Mercury	90	Pluto	09/28/2028	19:54:32
+Venus	0	Jupiter	09/30/2028	4:38:28
+Venus	90	Saturn	09/30/2028	20:54:23
+Venus	0	Venus	10/02/2028	12:27:55
+Sun	90	Pluto	10/06/2028	8:06:59
+Chiron	90	Sun	10/06/2028	23:06:33
+Venus	180	Neptune	10/10/2028	4:30:23
+Sun	180	Uranus	10/13/2028	5:32:39
+Sun	90	Mars	10/16/2028	17:58:07
+Mars	0	Jupiter	10/19/2028	15:24:11
+Venus	180	Chiron	10/20/2028	0:44:08
+Mars	90	Saturn	10/21/2028	0:00:41
+Mercury	90	Pluto	10/23/2028	5:32:22
+Mars	0	Venus	10/24/2028	7:58:42
+Jupiter	90	Pluto	10/27/2028	12:14:55
+Mercury	180	Uranus	10/27/2028	16:47:07
+Venus	0	T.Node	10/29/2028	11:59:33
+Mercury	90	Mars	10/29/2028	20:50:40
+Sun	90	Sun	10/30/2028	1:27:01
+Sun	90	Mercury	11/06/2028	16:10:37
+Mercury	90	Sun	11/06/2028	22:44:13
+Saturn	90	Sun	11/06/2028	23:15:47
+Venus	90	Pluto	11/07/2028	17:10:48
+Mars	180	Neptune	11/09/2028	9:40:38
+Mercury	90	Mercury	11/11/2028	14:52:22
+Venus	180	Uranus	11/13/2028	6:12:29
+Venus	90	Mars	11/16/2028	2:06:18
+Sun	90	Jupiter	11/19/2028	5:27:05
+Mercury	90	Jupiter	11/19/2028	12:03:47
+Mercury	0	Saturn	11/20/2028	0:00:44
+Sun	0	Saturn	11/20/2028	0:12:39
+Mercury	90	Venus	11/21/2028	5:11:49
+Sun	90	Venus	11/21/2028	21:54:50
+Venus	90	Sun	11/26/2028	19:11:21
+Mercury	90	Neptune	11/26/2028	23:04:38
+Sun	90	Neptune	11/30/2028	20:01:43`,
+  Prs: `Venus	90	Sun	11/21/2024	8:35:14
+Sun	90	Chiron	11/25/2024	13:17:38
+Sun	90	Saturn	11/29/2024	4:23:08
+Venus	0	Neptune	12/01/2024	11:33:44
+Uranus	180	T.Node	12/02/2024	0:49:27
+Mercury	90	Mars	12/02/2024	5:28:10
+Jupiter	90	Mercury	12/03/2024	1:33:07
+Venus	0	Uranus	12/03/2024	20:58:17
+Mercury	90	Mercury	12/04/2024	8:41:02
+Venus	90	Venus	12/06/2024	18:14:47
+Sun	90	Mercury	12/08/2024	14:41:20
+Sun	90	Mars	12/11/2024	2:57:32
+Mercury	90	Saturn	12/12/2024	16:07:58
+Venus	90	Jupiter	12/18/2024	20:24:16
+Mercury	90	Saturn	12/19/2024	12:10:15
+Venus	90	T.Node	12/29/2024	5:34:26
+Mercury	90	Mercury	12/29/2024	17:31:03
+Mercury	90	Mars	12/31/2024	18:33:53
+Venus	90	Pluto	01/01/2025	4:07:57
+Sun	90	Sun	01/01/2025	13:13:51
+Venus	180	Chiron	01/06/2025	17:15:32
+Mars	90	Venus	01/08/2025	7:27:59
+Venus	0	Saturn	01/10/2025	6:44:01
+Sun	0	Neptune	01/13/2025	5:25:49
+Sun	0	Uranus	01/15/2025	23:08:25
+Mercury	90	Sun	01/16/2025	5:25:31
+Mars	180	Uranus	01/16/2025	18:39:06
+Sun	90	Venus	01/19/2025	6:06:58
+Venus	0	Mercury	01/20/2025	0:33:07
+Venus	0	Mars	01/22/2025	18:39:31
+Mercury	0	Neptune	01/23/2025	22:42:46
+Mars	180	Neptune	01/23/2025	23:13:24
+Mercury	0	Uranus	01/25/2025	16:52:12
+Saturn	0	Mercury	01/27/2025	9:03:36
+Mercury	90	Venus	01/27/2025	18:53:51
+Sun	90	Jupiter	02/01/2025	20:08:40
+Mercury	90	Jupiter	02/05/2025	1:59:18
+Mercury	90	T.Node	02/11/2025	15:04:29
+Sun	90	T.Node	02/13/2025	4:29:43
+Mercury	90	Pluto	02/13/2025	9:14:51
+Sun	90	Pluto	02/16/2025	7:57:28
+Mercury	180	Chiron	02/16/2025	14:07:46
+Mercury	0	Saturn	02/18/2025	13:43:07
+Saturn	0	Mars	02/19/2025	0:27:32
+Sun	180	Chiron	02/22/2025	3:43:10
+Mercury	0	Mercury	02/23/2025	17:43:18
+Mercury	0	Mars	02/25/2025	3:27:43
+Sun	0	Saturn	02/25/2025	19:19:23
+Sun	0	Mercury	03/07/2025	8:10:36
+Sun	0	Mars	03/09/2025	21:24:43
+Uranus	180	T.Node	03/29/2025	7:45:19
+Mars	180	Neptune	03/30/2025	19:24:38
+Sun	0	Sun	03/31/2025	20:33:40
+Jupiter	90	Mercury	04/06/2025	23:05:58
+Mars	180	Uranus	04/07/2025	22:30:30
+Sun	90	Neptune	04/12/2025	22:50:13
+Sun	90	Uranus	04/15/2025	19:09:42
+Chiron	90	Neptune	04/16/2025	1:42:46
+Mars	90	Venus	04/16/2025	14:48:19
+Sun	0	Venus	04/19/2025	5:22:56
+Jupiter	90	Mars	04/21/2025	8:02:21
+Mercury	0	Sun	04/27/2025	20:08:19
+Sun	180	Jupiter	05/03/2025	9:51:53
+Mercury	90	Neptune	05/06/2025	8:49:51
+Mercury	90	Uranus	05/08/2025	3:24:51
+Mercury	0	Venus	05/10/2025	4:35:54
+Sun	180	T.Node	05/15/2025	7:09:58
+Mars	90	Jupiter	05/16/2025	18:37:40
+Venus	0	Sun	05/16/2025	21:24:10
+Mercury	180	Jupiter	05/17/2025	21:13:18
+Sun	180	Pluto	05/18/2025	14:15:13
+Mercury	180	T.Node	05/23/2025	14:21:28
+Sun	90	Chiron	05/24/2025	16:43:25
+Mercury	180	Pluto	05/25/2025	2:25:16
+Uranus	180	Pluto	05/26/2025	20:19:34
+Mercury	90	Chiron	05/27/2025	19:43:56
+Sun	90	Saturn	05/28/2025	12:30:30
+Mercury	90	Saturn	05/29/2025	12:00:19
+Venus	90	Neptune	05/30/2025	6:14:07
+Venus	90	Uranus	06/02/2025	4:08:31
+Mercury	90	Mercury	06/02/2025	20:33:50
+Mercury	90	Mars	06/04/2025	0:45:10
+Venus	0	Venus	06/05/2025	14:22:41
+Chiron	90	Uranus	06/07/2025	10:31:40
+Sun	90	Mercury	06/07/2025	12:08:00
+Mars	90	T.Node	06/07/2025	17:13:09
+Sun	90	Mars	06/10/2025	4:09:56
+Mars	90	Pluto	06/13/2025	12:02:24
+Mercury	90	Sun	06/14/2025	21:59:06
+Venus	180	Jupiter	06/19/2025	2:31:53
+Mercury	180	Neptune	06/22/2025	1:36:43
+Mercury	180	Uranus	06/23/2025	22:54:13
+Mars	0	Chiron	06/23/2025	23:04:24
+Mercury	90	Venus	06/26/2025	8:55:09
+Venus	180	T.Node	06/29/2025	19:53:20
+Mars	180	Saturn	06/30/2025	8:46:53
+Venus	180	Pluto	07/02/2025	17:38:27
+Sun	90	Sun	07/03/2025	0:42:27
+Venus	90	Chiron	07/08/2025	1:21:17
+Mercury	90	Jupiter	07/10/2025	8:06:50
+Venus	90	Saturn	07/11/2025	8:30:17
+Sun	180	Neptune	07/15/2025	12:13:29
+Mars	180	Mercury	07/16/2025	15:13:15
+Sun	180	Uranus	07/18/2025	10:21:34
+Venus	90	Mercury	07/19/2025	20:11:52
+Mars	180	Mars	07/20/2025	21:11:32
+Sun	90	Venus	07/21/2025	22:33:51
+Venus	90	Mars	07/22/2025	1:58:56
+T.Node	0	Mars	07/22/2025	15:51:47
+Mercury	90	Jupiter	07/26/2025	3:46:29
+Jupiter	90	Sun	07/30/2025	2:51:16
+Sun	90	Jupiter	08/05/2025	9:12:30
+Venus	90	Sun	08/09/2025	22:47:39
+Sun	90	T.Node	08/17/2025	8:45:38
+Venus	180	Neptune	08/20/2025	1:02:41
+Sun	90	Pluto	08/20/2025	15:57:06
+Venus	180	Uranus	08/22/2025	9:23:19
+Mercury	90	Jupiter	08/23/2025	18:25:46
+Mars	180	Sun	08/24/2025	22:09:20
+Venus	90	Venus	08/25/2025	4:53:49
+Sun	0	Chiron	08/26/2025	18:05:54
+Sun	180	Saturn	08/30/2025	13:21:57
+Mercury	90	T.Node	08/30/2025	18:42:34
+Mercury	90	Pluto	09/01/2025	11:40:01
+Mercury	0	Chiron	09/04/2025	13:17:11
+Venus	90	Jupiter	09/05/2025	17:16:33
+Mercury	180	Saturn	09/06/2025	10:47:17
+Sun	180	Mercury	09/09/2025	10:22:37
+Mercury	180	Mercury	09/11/2025	10:04:44
+Sun	180	Mars	09/12/2025	1:23:16
+Mars	90	Neptune	09/12/2025	4:35:29
+Mercury	180	Mars	09/12/2025	18:27:32
+Venus	90	T.Node	09/15/2025	4:58:19
+Mars	90	Uranus	09/16/2025	9:29:42
+Venus	90	Pluto	09/17/2025	19:32:05
+Mars	180	Venus	09/21/2025	9:49:37
+Venus	0	Chiron	09/22/2025	14:52:31
+Chiron	90	Uranus	09/22/2025	16:02:13
+Mercury	180	Sun	09/25/2025	0:29:50
+Venus	180	Saturn	09/25/2025	14:50:05
+Mercury	90	Neptune	10/02/2025	8:26:39
+Venus	180	Mercury	10/03/2025	9:32:29
+Mercury	90	Uranus	10/04/2025	3:25:19
+Sun	180	Sun	10/04/2025	8:21:09
+Venus	180	Mars	10/05/2025	11:10:36
+Mercury	180	Venus	10/06/2025	7:58:56
+Jupiter	180	Neptune	10/07/2025	10:22:32
+Mars	0	Jupiter	10/11/2025	16:23:23
+Mercury	0	Jupiter	10/15/2025	20:41:40
+Sun	90	Neptune	10/16/2025	9:22:03
+Sun	90	Uranus	10/19/2025	4:46:21
+Sun	180	Venus	10/22/2025	13:36:29
+Venus	180	Sun	10/23/2025	1:12:57
+Mercury	0	T.Node	10/24/2025	17:19:47
+Mercury	0	Pluto	10/27/2025	11:30:24
+Mars	0	T.Node	10/28/2025	2:13:12
+Mars	0	Pluto	11/01/2025	13:23:54
+Venus	90	Neptune	11/01/2025	13:59:24
+Mercury	90	Chiron	11/02/2025	14:15:43
+Venus	90	Uranus	11/03/2025	19:29:58
+T.Node	0	Mercury	11/04/2025	12:50:42
+Sun	0	Jupiter	11/05/2025	9:29:51
+Venus	180	Venus	11/06/2025	11:44:34
+Mars	90	Chiron	11/09/2025	17:52:20
+Mars	90	Saturn	11/14/2025	19:40:52
+Mercury	90	Chiron	11/16/2025	3:45:37
+Sun	0	T.Node	11/16/2025	19:57:00
+Venus	0	Jupiter	11/17/2025	12:08:58
+Sun	0	Pluto	11/19/2025	23:29:38
+Mercury	0	Pluto	11/20/2025	20:13:56
+Mercury	0	T.Node	11/23/2025	7:53:33
+Sun	90	Chiron	11/25/2025	18:55:40
+Venus	0	T.Node	11/26/2025	15:44:16
+Chiron	90	Neptune	11/27/2025	14:19:31
+Mars	90	Mercury	11/27/2025	21:03:02
+Venus	0	Pluto	11/29/2025	4:22:08
+Sun	90	Saturn	11/29/2025	10:02:39
+Mars	90	Mars	12/01/2025	7:45:54
+Venus	90	Chiron	12/03/2025	20:27:21
+Venus	90	Saturn	12/06/2025	18:34:04
+Mercury	0	T.Node	12/07/2025	3:55:04
+Sun	90	Mercury	12/08/2025	20:30:02
+Mercury	0	Pluto	12/10/2025	4:24:19
+Sun	90	Mars	12/11/2025	8:46:38
+Venus	90	Mercury	12/14/2025	9:04:27
+Mercury	90	Chiron	12/14/2025	21:33:45
+Venus	90	Mars	12/16/2025	9:43:27
+Jupiter	180	Neptune	12/16/2025	19:38:34
+Mercury	90	Saturn	12/17/2025	14:26:46
+Mercury	90	Mercury	12/24/2025	6:23:34
+Mercury	90	Mars	12/25/2025	23:46:44
+Mars	90	Sun	12/30/2025	6:12:07
+Sun	90	Sun	01/01/2026	19:00:38
+Venus	90	Sun	01/02/2026	17:45:14
+Uranus	180	Pluto	01/06/2026	14:56:33
+Mercury	90	Sun	01/09/2026	5:41:19
+Venus	0	Neptune	01/12/2026	4:44:41
+Sun	0	Neptune	01/13/2026	11:16:25
+Venus	0	Uranus	01/14/2026	9:56:31
+Mars	0	Neptune	01/14/2026	16:58:45
+Sun	0	Uranus	01/16/2026	4:56:43
+Mercury	0	Neptune	01/16/2026	15:44:10
+Venus	90	Venus	01/17/2026	1:51:54
+Mars	0	Uranus	01/18/2026	7:12:00
+Mercury	0	Uranus	01/18/2026	8:30:25
+Sun	90	Venus	01/19/2026	11:52:16
+Mercury	90	Venus	01/20/2026	8:59:51
+Mars	90	Venus	01/22/2026	14:31:44
+Venus	90	Jupiter	01/28/2026	1:38:53
+Mercury	90	Jupiter	01/28/2026	11:22:58
+Sun	90	Jupiter	02/02/2026	1:58:39
+Mercury	90	T.Node	02/03/2026	23:53:35
+Mercury	90	Pluto	02/05/2026	18:55:59
+Venus	90	T.Node	02/06/2026	5:30:39
+Chiron	90	Neptune	02/07/2026	13:23:16
+Venus	90	Pluto	02/08/2026	18:18:51
+Mercury	180	Chiron	02/09/2026	3:31:41
+Mars	90	Jupiter	02/09/2026	6:13:52
+Mercury	0	Saturn	02/11/2026	7:36:53
+Sun	90	T.Node	02/13/2026	10:20:08
+Venus	180	Chiron	02/13/2026	10:48:50
+Venus	0	Saturn	02/16/2026	9:15:29
+Sun	90	Pluto	02/16/2026	13:44:43
+Mercury	0	Mercury	02/17/2026	19:07:16
+Mercury	0	Mars	02/20/2026	3:07:58
+Sun	180	Chiron	02/22/2026	9:27:03
+Mars	90	T.Node	02/23/2026	20:45:47
+Venus	0	Mercury	02/24/2026	0:56:55
+Sun	0	Saturn	02/26/2026	1:04:13
+Venus	0	Mars	02/26/2026	2:00:00
+Venus	0	Mars	02/26/2026	2:00:01
+Mars	90	Pluto	02/27/2026	21:29:03
+Uranus	180	Pluto	03/04/2026	8:56:49
+Mercury	0	Mars	03/04/2026	19:42:13
+Mars	180	Chiron	03/07/2026	8:20:41
+Mercury	0	Mercury	03/07/2026	11:59:58
+Sun	0	Mercury	03/07/2026	14:03:23
+Sun	0	Mars	03/10/2026	3:17:41
+Mars	0	Saturn	03/12/2026	0:17:10
+Venus	0	Sun	03/15/2026	14:52:11
+Mars	0	Mercury	03/24/2026	4:14:30
+Venus	90	Neptune	03/25/2026	5:31:01
+Mars	0	Mars	03/27/2026	10:17:27
+Venus	90	Uranus	03/27/2026	11:42:19
+Venus	0	Venus	03/30/2026	4:53:33
+Sun	0	Sun	04/01/2026	2:21:38
+Mercury	0	Mercury	04/04/2026	12:54:36
+Chiron	90	Uranus	04/05/2026	15:58:57
+Mercury	0	Mars	04/06/2026	22:14:27
+Venus	180	Jupiter	04/10/2026	10:38:14
+Sun	90	Neptune	04/13/2026	4:39:29
+Sun	90	Uranus	04/16/2026	0:56:12
+Sun	0	Venus	04/19/2026	11:06:31
+Venus	180	T.Node	04/19/2026	20:16:20
+Venus	180	Pluto	04/22/2026	10:48:49
+Mercury	0	Sun	04/22/2026	16:01:09
+T.Node	0	Saturn	04/23/2026	5:30:44
+Mars	0	Sun	04/24/2026	11:15:09
+T.Node	0	Saturn	04/25/2026	10:31:50
+Venus	90	Chiron	04/27/2026	6:44:28
+T.Node	0	Saturn	04/27/2026	15:02:26
+Mercury	90	Neptune	04/29/2026	13:46:11
+Venus	90	Saturn	04/30/2026	7:28:09
+Mercury	90	Uranus	05/01/2026	2:02:59
+Mercury	0	Venus	05/02/2026	20:32:18
+Sun	180	Jupiter	05/03/2026	15:42:25
+Venus	90	Mercury	05/08/2026	5:33:27
+Mercury	180	Jupiter	05/09/2026	17:10:40
+Mars	90	Neptune	05/10/2026	0:20:29
+Venus	90	Mars	05/10/2026	8:25:11
+Mars	90	Uranus	05/13/2026	16:32:40
+Mercury	180	T.Node	05/15/2026	1:29:08
+Sun	180	T.Node	05/15/2026	12:56:30
+Mercury	180	Pluto	05/16/2026	12:21:37
+Mars	0	Venus	05/18/2026	2:57:43
+Sun	180	Pluto	05/18/2026	19:58:36
+Mercury	90	Chiron	05/19/2026	5:00:20
+Mercury	90	Saturn	05/20/2026	21:56:36
+Saturn	0	Sun	05/21/2026	12:27:53
+Sun	90	Chiron	05/24/2026	22:26:09
+Mercury	90	Mercury	05/25/2026	12:35:06
+Mercury	90	Mars	05/26/2026	19:34:41
+Jupiter	180	Neptune	05/27/2026	8:32:09
+Venus	90	Sun	05/28/2026	14:43:52
+Sun	90	Saturn	05/28/2026	18:16:57
+T.Node	180	Chiron	05/31/2026	18:06:20
+Chiron	0	Venus	06/03/2026	23:14:23
+Mars	180	Jupiter	06/05/2026	15:42:55
+Venus	180	Neptune	06/07/2026	16:55:59
+Sun	90	Mercury	06/07/2026	17:59:30
+Mercury	90	Sun	06/09/2026	0:35:38
+Venus	180	Uranus	06/10/2026	2:03:49
+Sun	90	Mars	06/10/2026	10:00:05
+Jupiter	180	Uranus	06/10/2026	22:00:01
+Venus	90	Venus	06/12/2026	22:54:28
+Mercury	180	Neptune	06/20/2026	18:37:51
+Mars	180	T.Node	06/21/2026	9:53:56
+Venus	90	Jupiter	06/24/2026	21:30:34
+Mars	180	Pluto	06/25/2026	19:53:58
+Mercury	180	Uranus	06/27/2026	2:48:56
+Jupiter	90	Venus	06/27/2026	3:57:01
+Uranus	90	Chiron	06/30/2026	12:37:15
+Mercury	180	Uranus	07/02/2026	12:42:17
+Sun	90	Sun	07/03/2026	6:34:03
+Mars	90	Chiron	07/04/2026	1:44:09
+Venus	90	T.Node	07/05/2026	0:18:38
+Venus	90	Pluto	07/07/2026	20:13:59
+Mercury	180	Neptune	07/09/2026	4:36:43
+Mars	90	Saturn	07/09/2026	6:46:20
+Venus	0	Chiron	07/13/2026	2:55:54
+Sun	180	Neptune	07/15/2026	17:57:53
+Venus	180	Saturn	07/16/2026	11:01:07
+Sun	180	Uranus	07/18/2026	16:04:08
+Sun	90	Venus	07/22/2026	4:17:01
+Mars	90	Mercury	07/23/2026	1:22:45
+Venus	180	Mercury	07/25/2026	7:15:19
+Mars	90	Mars	07/26/2026	18:52:25
+Venus	180	Mars	07/27/2026	16:55:41
+Mercury	180	Neptune	08/04/2026	19:32:58
+Sun	90	Jupiter	08/05/2026	15:04:36
+Mercury	180	Uranus	08/07/2026	0:40:51
+Mercury	90	Venus	08/09/2026	8:05:32
+Mercury	90	Jupiter	08/17/2026	2:36:19
+Sun	90	T.Node	08/17/2026	14:28:14
+Venus	180	Sun	08/18/2026	11:07:19
+Sun	90	Pluto	08/20/2026	21:40:32
+Mercury	90	T.Node	08/22/2026	20:47:56
+Mercury	90	Pluto	08/24/2026	10:44:09
+Sun	0	Chiron	08/26/2026	23:54:14
+Mercury	0	Chiron	08/27/2026	9:39:00
+Mars	90	Sun	08/28/2026	18:43:36
+Mercury	180	Saturn	08/29/2026	6:48:51
+Jupiter	90	Jupiter	08/29/2026	10:08:18
+Sun	180	Saturn	08/30/2026	19:13:19
+Venus	90	Neptune	09/01/2026	2:30:50
+Mercury	180	Mercury	09/03/2026	8:25:11
+Venus	90	Uranus	09/04/2026	16:59:14
+Mercury	180	Mars	09/04/2026	17:59:14
+Venus	180	Venus	09/09/2026	9:48:27
+Sun	180	Mercury	09/09/2026	16:09:44
+Sun	180	Mars	09/12/2026	7:07:43
+Mars	180	Neptune	09/16/2026	19:51:51
+Mercury	180	Sun	09/17/2026	16:48:03
+Mars	180	Uranus	09/21/2026	10:27:05
+Mercury	90	Neptune	09/25/2026	15:30:51
+Mars	90	Venus	09/27/2026	1:23:27
+Mercury	90	Uranus	09/27/2026	14:57:23
+Mercury	180	Venus	09/30/2026	1:40:31
+Sun	180	Sun	10/04/2026	14:12:41
+Saturn	0	Sun	10/04/2026	17:52:16
+Chiron	0	Venus	10/04/2026	20:53:15
+Mercury	0	Jupiter	10/11/2026	12:55:40
+Sun	90	Neptune	10/16/2026	15:05:02
+Sun	90	Uranus	10/19/2026	10:30:02
+Mars	90	Jupiter	10/21/2026	12:43:14
+Sun	180	Venus	10/22/2026	19:22:49
+T.Node	90	Pluto	10/25/2026	5:32:20
+Venus	180	Venus	10/26/2026	13:45:55
+Venus	90	Uranus	11/01/2026	15:16:29
+Jupiter	90	T.Node	11/03/2026	16:35:13
+Mercury	0	Jupiter	11/03/2026	22:49:36
+Sun	0	Jupiter	11/05/2026	15:19:35
+Venus	90	Neptune	11/10/2026	2:29:18
+Mars	90	T.Node	11/13/2026	13:34:57
+Sun	0	T.Node	11/17/2026	1:40:40
+Venus	90	Neptune	11/18/2026	4:03:30
+Sun	0	Pluto	11/20/2026	5:15:14
+Mars	90	Pluto	11/20/2026	18:05:13
+T.Node	90	T.Node	11/23/2026	13:03:37
+Mercury	0	Jupiter	11/24/2026	13:21:39
+Uranus	90	Chiron	11/25/2026	22:18:26
+Sun	90	Chiron	11/26/2026	0:46:54
+Venus	90	Uranus	11/27/2026	2:23:24
+Sun	90	Saturn	11/29/2026	15:55:16
+Mercury	0	T.Node	12/02/2026	20:24:25
+Venus	180	Venus	12/03/2026	8:19:28
+Mercury	0	Pluto	12/04/2026	23:35:55
+Mars	0	Chiron	12/05/2026	23:34:50
+Mercury	90	Chiron	12/08/2026	20:43:20
+Sun	90	Mercury	12/09/2026	2:16:08
+Mercury	90	Saturn	12/11/2026	6:22:53
+Sun	90	Mars	12/11/2026	14:30:40
+Mercury	90	Mercury	12/17/2026	11:17:38
+Mars	180	Saturn	12/18/2026	9:32:40
+Mercury	90	Mars	12/19/2026	2:45:30
+Venus	0	Jupiter	12/21/2026	5:18:53
+Mercury	90	Sun	01/01/2027	22:45:03
+Sun	90	Sun	01/02/2027	0:50:51
+Venus	0	T.Node	01/02/2027	5:17:29
+Venus	0	Pluto	01/05/2027	8:05:06
+Mercury	0	Neptune	01/09/2027	5:54:29
+Mercury	0	Uranus	01/10/2027	22:15:52
+Venus	90	Chiron	01/10/2027	22:50:46
+Mercury	90	Venus	01/12/2027	22:26:33
+Mars	90	Chiron	06/13/2028	0:02:32
+Venus	90	Chiron	06/17/2028	23:18:01
+Mars	90	Saturn	06/18/2028	4:22:43
+Jupiter	180	Mars	06/19/2028	13:11:10
+Venus	90	Chiron	06/28/2028	4:38:11
+Mercury	90	Mercury	06/29/2028	23:57:23
+Mars	90	Mercury	07/01/2028	20:10:34
+Mercury	90	Mars	07/02/2028	2:38:01
+Sun	90	Sun	07/02/2028	18:06:10
+Mars	90	Mars	07/05/2028	12:37:20
+T.Node	0	Neptune	07/06/2028	7:39:01
+Venus	90	Saturn	07/08/2028	15:57:02
+T.Node	0	Neptune	07/08/2028	18:32:37
+Mercury	90	Sun	07/15/2028	5:21:00
+Sun	180	Neptune	07/15/2028	5:39:05
+Sun	180	Uranus	07/18/2028	3:46:27
+Mercury	180	Neptune	07/20/2028	23:02:20
+Sun	90	Venus	07/21/2028	15:58:16
+Mercury	180	Uranus	07/22/2028	6:28:45
+Venus	90	Mercury	07/23/2028	11:26:31
+Mercury	90	Venus	07/23/2028	20:13:57
+T.Node	0	Neptune	07/26/2028	5:29:35
+Venus	90	Mars	07/26/2028	16:50:34
+Mercury	90	Jupiter	07/30/2028	11:20:41
+T.Node	0	Neptune	07/31/2028	6:34:38
+Sun	90	Jupiter	08/05/2028	2:41:36
+Mercury	90	T.Node	08/05/2028	8:55:20
+T.Node	0	Neptune	08/06/2028	8:18:09
+Mars	90	Sun	08/06/2028	19:18:56
+Mercury	90	Pluto	08/07/2028	2:07:00
+Mercury	0	Chiron	08/10/2028	9:04:29
+Mercury	180	Saturn	08/12/2028	12:29:31
+Sun	90	T.Node	08/17/2028	2:13:10
+Mercury	180	Mercury	08/18/2028	10:46:12
+Venus	90	Sun	08/19/2028	7:36:48
+Mercury	180	Mars	08/20/2028	3:03:28
+Sun	90	Pluto	08/20/2028	9:24:04
+Mars	180	Neptune	08/25/2028	0:45:58
+Sun	0	Chiron	08/26/2028	11:33:30
+Mars	180	Uranus	08/29/2028	8:58:49
+Sun	180	Saturn	08/30/2028	6:50:43
+Venus	180	Neptune	08/30/2028	17:59:01
+Venus	180	Uranus	09/02/2028	8:20:59
+Mars	90	Venus	09/03/2028	15:06:54
+Venus	90	Venus	09/05/2028	10:29:09
+Mercury	180	Sun	09/06/2028	12:04:42
+Sun	180	Mercury	09/09/2028	3:52:15
+Sun	180	Mars	09/11/2028	18:51:44
+Venus	90	Jupiter	09/17/2028	20:31:46
+Mars	90	Jupiter	09/25/2028	18:34:21
+Venus	90	T.Node	09/27/2028	21:22:44
+Venus	90	Pluto	09/30/2028	15:01:08
+Mercury	180	Sun	10/01/2028	4:34:30
+Sun	180	Sun	10/04/2028	1:49:20
+Venus	0	Chiron	10/05/2028	15:29:09
+Venus	180	Saturn	10/08/2028	18:18:06
+Mars	90	T.Node	10/14/2028	21:52:47
+Sun	90	Neptune	10/16/2028	2:46:04
+Jupiter	180	Sun	10/16/2028	9:12:48
+Venus	180	Mercury	10/16/2028	19:20:53
+Sun	90	Uranus	10/18/2028	22:09:19
+Venus	180	Mars	10/18/2028	22:26:37
+Mars	90	Pluto	10/20/2028	8:10:10
+Mercury	180	Sun	10/21/2028	16:07:36
+Sun	180	Venus	10/22/2028	6:58:54
+Mercury	90	Neptune	10/29/2028	13:05:01
+Mars	0	Chiron	10/30/2028	14:02:22
+Mercury	90	Uranus	10/31/2028	6:13:15
+Mercury	180	Venus	11/02/2028	7:14:13
+Sun	0	Jupiter	11/05/2028	2:53:40
+Venus	180	Sun	11/05/2028	22:17:29
+Mars	180	Saturn	11/06/2028	3:36:36
+Mercury	0	Jupiter	11/10/2028	17:22:32
+Venus	90	Neptune	11/15/2028	14:39:42
+Sun	0	T.Node	11/16/2028	13:16:22
+Mercury	0	T.Node	11/17/2028	20:47:04
+Venus	90	Uranus	11/17/2028	20:51:58
+Sun	0	Pluto	11/19/2028	16:48:14
+Mercury	0	Pluto	11/19/2028	20:44:41
+Venus	180	Venus	11/20/2028	13:53:43
+Mercury	90	Chiron	11/23/2028	14:00:55
+Mars	180	Mercury	11/23/2028	23:53:55
+Sun	90	Chiron	11/25/2028	12:15:24
+Mercury	90	Saturn	11/25/2028	22:11:41
+Mars	180	Mars	11/28/2028	23:59:41
+Sun	90	Saturn	11/29/2028	3:23:23`,
+};
+
+// Parse a raw string into aspect objects
+function parseRaw(raw) {
+  return raw.trim().split('\n').map((line,idx) => {
+    const p = line.split('\t').map(s=>s.trim()).filter(Boolean);
+    if (p.length < 4) return null;
+    const [p1,asp,p2,dateStr,timeStr] = p;
+    const [mm,dd,yyyy] = dateStr.split('/').map(Number);
+    const [hh,mn] = (timeStr||'0:0').split(':').map(Number);
+    const ts = new Date(yyyy,mm-1,dd,hh,mn,0).getTime();
+    return {id:idx,p1,asp:parseInt(asp),p2,date:dateStr,time:timeStr||'',ts,
+            isoDate:`${yyyy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`};
+  }).filter(Boolean);
+}
+
+let activeDataset = 'Tra';
+let ALL_ASPECTS = parseRaw(DATASETS['Tra']);
+
+function switchDataset(key) {
+  activeDataset = key;
+  ALL_ASPECTS = parseRaw(DATASETS[key]);
+  // Reset planet/aspect state for new dataset
+  const newPlanets = [...new Set([...ALL_ASPECTS.map(a=>a.p1),...ALL_ASPECTS.map(a=>a.p2)])].sort();
+  const newAsps = [...new Set(ALL_ASPECTS.map(a=>a.asp))].sort((a,b)=>a-b);
+  PLANETS_SET = newPlanets;
+  ASPECTS_SET = newAsps;
+  activePlanets1 = new Set(newPlanets);
+  activePlanets2 = new Set(newPlanets);
+  activeAspects = new Set(newAsps.map(String));
+  // Update button styles
+  document.querySelectorAll('.ds-btn').forEach(b => b.classList.toggle('active', b.id === 'ds-btn-' + key));
+  // Rebuild chips and refresh
+  buildChips();
+  const dates = ALL_ASPECTS.map(a=>a.isoDate).sort();
+  document.getElementById('date-from').value = dates[0] || '';
+  document.getElementById('date-to').value = dates[dates.length-1] || '';
+  applyFilters();
+}
+
+let PLANETS_SET = [...new Set([...ALL_ASPECTS.map(a=>a.p1),...ALL_ASPECTS.map(a=>a.p2)])].sort();
+let ASPECTS_SET = [...new Set(ALL_ASPECTS.map(a=>a.asp))].sort((a,b)=>a-b);
+
+const PLANET_COLORS = {
+  Sun:'#ffd060',Moon:'#c0d8f0',Mercury:'#90d890',Venus:'#f0a0c0',
+  Mars:'#f06050',Jupiter:'#f0a050',Saturn:'#c8b080',Uranus:'#60d8d8',
+  Neptune:'#6080f0',Pluto:'#c060d0',Chiron:'#80c0a0','T.Node':'#d0d0d0',
+};
+const ASPECT_COLORS = {0:'#f0c060',90:'#e05050',180:'#8060e0'};
+const getPColor = p => PLANET_COLORS[p]||'#888';
+const getAColor = a => ASPECT_COLORS[a]||'#888';
+function getEntryColor(e) {
+  const m = document.getElementById('color-mode').value;
+  return m==='planet1'?getPColor(e.p1):m==='planet2'?getPColor(e.p2):getAColor(e.asp);
+}
+
+// State
+let activeAspects = new Set(ASPECTS_SET.map(String));
+let activePlanets1 = new Set(PLANETS_SET);
+let activePlanets2 = new Set(PLANETS_SET);
+let filtered = [];
+let aspMode = 'prs'; // 'prs' | 'asp' | 'off'
+
+function setAspMode(mode) {
+  aspMode = mode;
+  const colors = { prs: 'var(--c0)', asp: 'var(--c90)', off: 'var(--muted)' };
+  const textColors = { prs: '#06080f', asp: '#fff', off: 'var(--muted)' };
+  ['prs','asp','off'].forEach(m => {
+    const btn = document.getElementById('asp-mode-' + m);
+    const active = m === mode;
+    btn.style.background = active ? colors[m] : 'var(--s2)';
+    btn.style.color = active ? (m === 'prs' ? '#06080f' : '#fff') : 'var(--muted)';
+    btn.style.fontWeight = active ? '700' : '400';
+  });
+  renderAll();
+  generatePine();
+}
+let candles = []; // {ts, open, high, low, close, dateStr}
+let hoveredCandle = -1;
+let hoveredAspect = -1;
+
+// ── Setups ─────────────────────────────────────────────
+// ── Build chips ────────────────────────────────────────
+function buildChips() {
+  const ac = document.getElementById('aspect-chips');
+  ac.innerHTML = ASPECTS_SET.map(a => {
+    const sym = a===0?'☌ Conj':a===90?'□ Sq':a===180?'☍ Opp':a+'°';
+    return `<div class="chip aspect-chip-${a} on" data-asp="${a}" onclick="toggleAspect(${a})">${sym}</div>`;
+  }).join('');
+  buildPlanetChips('p1-chips','p1');
+  buildPlanetChips('p2-chips','p2');
+}
+
+function buildPlanetChips(cid,key) {
+  document.getElementById(cid).innerHTML = PLANETS_SET.map(p => {
+    const col = getPColor(p);
+    return `<div class="chip on" data-planet="${p}" data-key="${key}" onclick="togglePlanet('${key}','${p}')"
+      style="border-color:${col}55;color:${col}">
+      <span class="dot" style="background:${col}"></span>${p}</div>`;
+  }).join('');
+}
+
+function toggleAspect(a) {
+  const k = String(a);
+  if (activeAspects.has(k)) activeAspects.delete(k); else activeAspects.add(k);
+  document.querySelectorAll(`[data-asp="${a}"]`).forEach(el=>el.classList.toggle('on',activeAspects.has(k)));
+  applyFilters();
+}
+function togglePlanet(key,p) {
+  const s = key==='p1'?activePlanets1:activePlanets2;
+  if (s.has(p)) s.delete(p); else s.add(p);
+  document.querySelectorAll(`[data-planet="${p}"][data-key="${key}"]`).forEach(el=>el.classList.toggle('on',s.has(p)));
+  applyFilters();
+}
+function selectAllAspects(on) {
+  ASPECTS_SET.forEach(a => {
+    if (on) activeAspects.add(String(a)); else activeAspects.delete(String(a));
+    document.querySelectorAll(`[data-asp="${a}"]`).forEach(el=>el.classList.toggle('on',on));
+  });
+  applyFilters();
+}
+function selectAllPlanets(key,on) {
+  const s = key==='p1'?activePlanets1:activePlanets2;
+  PLANETS_SET.forEach(p => {
+    if (on) s.add(p); else s.delete(p);
+    document.querySelectorAll(`[data-planet="${p}"][data-key="${key}"]`).forEach(el=>el.classList.toggle('on',on));
+  });
+  applyFilters();
+}
+
+// ── Filters ────────────────────────────────────────────
+function applyFilters() {
+  const df = document.getElementById('date-from').value;
+  const dt = document.getElementById('date-to').value;
+  filtered = ALL_ASPECTS.filter(e => {
+    if (!activeAspects.has(String(e.asp))) return false;
+    if (!activePlanets1.has(e.p1)) return false;
+    if (!activePlanets2.has(e.p2)) return false;
+    if (df && e.isoDate < df) return false;
+    if (dt && e.isoDate > dt) return false;
+    return true;
+  });
+  renderResultsList();
+  renderAll();
+  generatePine();
+  updateStats();
+}
+
+// ── Yahoo Finance fetch ────────────────────────────────
+async function loadChart() {
+  const ticker = document.getElementById('ticker').value.trim().toUpperCase();
+  const interval = document.getElementById('interval').value;
+  const range = document.getElementById('range').value;
+  if (!ticker) return;
+
+  const btn = document.getElementById('load-btn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.textContent = 'Loading...';
+  status.style.color = '#f0c060';
+
+  // Try multiple CORS proxies
+  const proxies = [
+    url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    url => `https://cors-anywhere.herokuapp.com/${url}`,
+  ];
+
+  const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${interval}&range=${range}&includePrePost=false`;
+
+  let data = null;
+  for (const makeProxy of proxies) {
+    try {
+      const proxyUrl = makeProxy(yahooUrl);
+      const res = await fetch(proxyUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: AbortSignal.timeout(8000)
+      });
+      if (!res.ok) continue;
+      data = await res.json();
+      if (data?.chart?.result?.[0]) break;
+    } catch(e) { continue; }
+  }
+
+  btn.disabled = false;
+
+  if (!data?.chart?.result?.[0]) {
+    status.textContent = '✕ Failed — try again or check ticker';
+    status.style.color = '#e05050';
+    return;
+  }
+
+  const result = data.chart.result[0];
+  const timestamps = result.timestamp;
+  const q = result.indicators.quote[0];
+  const { open, high, low, close } = q;
+
+  candles = timestamps.map((ts,i) => {
+    if (!close[i] || !open[i]) return null;
+    const d = new Date(ts*1000);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return {
+      ts: d.getTime(),
+      open: open[i], high: high[i], low: low[i], close: close[i],
+      dateStr: `${yyyy}-${mm}-${dd}`,
+      displayDate: `${mm}/${dd}/${yyyy}`
+    };
+  }).filter(Boolean);
+
+  if (!candles.length) {
+    status.textContent = '✕ No data returned';
+    status.style.color = '#e05050';
+    return;
+  }
+
+  // Auto-set date range from candle data
+  const firstDate = candles[0].dateStr;
+  const lastDate = candles[candles.length-1].dateStr;
+  document.getElementById('date-from').value = firstDate;
+  document.getElementById('date-to').value = lastDate;
+
+  const meta = result.meta;
+  const sym = meta.symbol || ticker;
+  const price = meta.regularMarketPrice?.toFixed(2) || '';
+  status.textContent = `✓ ${sym}  ${price}  ${candles.length} bars`;
+  status.style.color = '#26a69a';
+
+  document.getElementById('overlay-msg').style.display = 'none';
+  applyFilters();
+}
+
+// ── Chart drawing ──────────────────────────────────────
+const canvas = document.getElementById('chart-canvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const wrap = document.getElementById('chart-wrap');
+  canvas.width = wrap.offsetWidth;
+  canvas.height = wrap.offsetHeight;
+  renderAll();
+}
+
+const PAD = { top: 20, right: 65, bottom: 25, left: 8 };
+
+function renderAll() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#07101d';
+  ctx.fillRect(0,0,W,H);
+
+  if (!candles.length) {
+    drawGrid(W,H);
+    return;
+  }
+
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+  const n = candles.length;
+  const candleW = Math.max(1, Math.floor(cW / n) - 1);
+  const spacing = cW / n;
+
+  // Price range
+  let minP = Infinity, maxP = -Infinity;
+  candles.forEach(c => { if(c.low<minP) minP=c.low; if(c.high>maxP) maxP=c.high; });
+  const pad = (maxP-minP)*0.05;
+  minP -= pad; maxP += pad;
+  const priceToY = p => PAD.top + cH - ((p-minP)/(maxP-minP))*cH;
+
+  drawGrid(W, H, minP, maxP, priceToY, cH);
+
+  // Aspect lines first (behind candles)
+  const lineWidth = parseInt(document.getElementById('line-width').value)||2;
+  const lineStyle = document.getElementById('line-style').value;
+  const labelSide = document.getElementById('label-side').value;
+  const showP1 = document.getElementById('show-p1').checked;
+  const showAsp = (aspMode !== 'off');
+  const showP2 = document.getElementById('show-p2').checked;
+  const showTime = document.getElementById('show-time').checked;
+
+  filtered.forEach((asp, ai) => {
+    // Find matching candle by date
+    const ci = candles.findIndex(c => c.dateStr === asp.isoDate);
+    if (ci < 0) return;
+    const x = PAD.left + ci * spacing + spacing/2;
+    const col = getEntryColor(asp);
+    const isHL = hoveredAspect === ai;
+
+    ctx.save();
+    ctx.strokeStyle = isHL ? '#ffffff' : col;
+    ctx.lineWidth = isHL ? lineWidth+1 : lineWidth;
+    ctx.globalAlpha = isHL ? 1 : 0.65;
+    if (lineStyle==='dashed') ctx.setLineDash([6,4]);
+    else if (lineStyle==='dotted') ctx.setLineDash([2,4]);
+    else ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(x, PAD.top);
+    ctx.lineTo(x, H - PAD.bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+
+    // Rotated label
+    const parts = [];
+    if (showP1) parts.push(asp.p1);
+    if (showAsp) parts.push(aspMode==='asp' ? (asp.asp===0?'☌':asp.asp===90?'□':'☍') : asp.asp+'°');
+    if (showP2) parts.push(asp.p2);
+    if (showTime) parts.push(asp.time.slice(0,5));
+    const label = parts.join(' ');
+    const fontSize = 9;
+    ctx.font = `${fontSize}px "Space Mono", monospace`;
+    const tw = ctx.measureText(label).width;
+    const pd = 4;
+    const lh = fontSize + pd*2;
+    const labelY = PAD.top + cH * 0.28;
+
+    ctx.translate(x, labelY);
+    ctx.rotate(labelSide==='right' ? -Math.PI/2 : Math.PI/2);
+    ctx.fillStyle = 'rgba(7,16,29,0.85)';
+    ctx.strokeStyle = isHL ? '#fff' : col;
+    ctx.lineWidth = 1;
+    roundRect(ctx, -tw/2-pd, -fontSize-pd+2, tw+pd*2, lh, 3);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = isHL ? '#fff' : col;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.globalAlpha = 1;
+    ctx.fillText(label, 0, 0);
+    ctx.restore();
+  });
+
+  // Candles
+  const upCol = document.getElementById('col-up').value;
+  const dnCol = document.getElementById('col-dn').value;
+
+  candles.forEach((c, i) => {
+    const x = PAD.left + i * spacing + spacing/2;
+    const isHL = hoveredCandle === i;
+    const col = c.close >= c.open ? upCol : dnCol;
+    const ox = Math.max(1, candleW);
+    const bodyTop = priceToY(Math.max(c.open,c.close));
+    const bodyBot = priceToY(Math.min(c.open,c.close));
+    const bodyH = Math.max(1, bodyBot - bodyTop);
+
+    ctx.fillStyle = col;
+    ctx.globalAlpha = isHL ? 1 : 0.9;
+    ctx.fillRect(x - ox/2, bodyTop, ox, bodyH);
+
+    // Wicks
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, priceToY(c.high));
+    ctx.lineTo(x, bodyTop);
+    ctx.moveTo(x, bodyBot);
+    ctx.lineTo(x, priceToY(c.low));
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  });
+
+  // Price axis labels
+  drawPriceAxis(W, H, minP, maxP, priceToY, cH);
+  drawDateAxis(W, H, spacing, n);
+}
+
+function drawGrid(W, H, minP, maxP, priceToY, cH) {
+  ctx.strokeStyle = '#0e1e33';
+  ctx.lineWidth = 1;
+  const steps = 6;
+  if (minP !== undefined) {
+    for (let i=0; i<=steps; i++) {
+      const p = minP + (maxP-minP)*(i/steps);
+      const y = priceToY(p);
+      ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(W-PAD.right, y); ctx.stroke();
+    }
+  } else {
+    for (let y=0; y<H; y+=40) {
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+    }
+  }
+  for (let x=0; x<W-PAD.right; x+=80) {
+    ctx.beginPath(); ctx.moveTo(PAD.left+x, PAD.top); ctx.lineTo(PAD.left+x, H-PAD.bottom); ctx.stroke();
+  }
+}
+
+function drawPriceAxis(W, H, minP, maxP, priceToY, cH) {
+  const steps = 6;
+  ctx.font = '9px Space Mono';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#506080';
+  for (let i=0; i<=steps; i++) {
+    const p = minP + (maxP-minP)*(i/steps);
+    const y = priceToY(p);
+    ctx.fillText(p.toFixed(2), W-PAD.right+4, y+3);
+  }
+}
+
+function drawDateAxis(W, H, spacing, n) {
+  ctx.font = '8px Space Mono';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#506080';
+  const step = Math.max(1, Math.round(n/8));
+  for (let i=0; i<n; i+=step) {
+    const x = PAD.left + i*spacing + spacing/2;
+    const d = candles[i].dateStr.slice(5); // MM-DD
+    ctx.fillText(d, x, H-PAD.bottom+14);
+  }
+}
+
+function roundRect(ctx,x,y,w,h,r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+// ── Mouse/touch interaction ───────────────────────────
+function getCanvasPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches?.[0];
+  return {
+    x: (touch||e).clientX - rect.left,
+    y: (touch||e).clientY - rect.top
+  };
+}
+
+function handleMove(e) {
+  if (!candles.length) return;
+  const {x,y} = getCanvasPos(e);
+  const W = canvas.width;
+  const n = candles.length;
+  const cW = W - PAD.left - PAD.right;
+  const spacing = cW / n;
+  const ci = Math.round((x - PAD.left - spacing/2) / spacing);
+  hoveredCandle = (ci>=0 && ci<n) ? ci : -1;
+
+  // Find closest aspect line
+  let closestAsp = -1, minD = 30;
+  filtered.forEach((asp,ai) => {
+    const fi = candles.findIndex(c => c.dateStr === asp.isoDate);
+    if (fi<0) return;
+    const ax = PAD.left + fi*spacing + spacing/2;
+    const d = Math.abs(x-ax);
+    if (d<minD) { minD=d; closestAsp=ai; }
+  });
+  hoveredAspect = closestAsp;
+
+  // Tooltip
+  const tt = document.getElementById('tooltip');
+  const showOHLC = hoveredCandle >= 0 && hoveredCandle < n;
+  if (showOHLC || hoveredAspect >= 0) {
+    tt.style.display = 'block';
+    const tx = Math.min(x+12, canvas.width-200);
+    const ty = Math.max(y-60, 0);
+    tt.style.left = tx+'px';
+    tt.style.top = ty+'px';
+
+    if (showOHLC) {
+      const c = candles[hoveredCandle];
+      const col = c.close>=c.open ? '#26a69a' : '#ef5350';
+      document.getElementById('tt-date').textContent = c.displayDate;
+      document.getElementById('tt-ohlc').innerHTML =
+        `O <span style="color:${col}">${c.open.toFixed(2)}</span> `+
+        `H <span style="color:#90d890">${c.high.toFixed(2)}</span> `+
+        `L <span style="color:#f06050">${c.low.toFixed(2)}</span> `+
+        `C <span style="color:${col}">${c.close.toFixed(2)}</span>`;
+    } else {
+      document.getElementById('tt-date').textContent = '';
+      document.getElementById('tt-ohlc').textContent = '';
+    }
+
+    if (hoveredAspect >= 0) {
+      const asp = filtered[hoveredAspect];
+      const col = getEntryColor(asp);
+      document.getElementById('tt-asp').innerHTML =
+        `<span style="color:${getPColor(asp.p1)}">${asp.p1}</span> `+
+        `<span style="color:${getAColor(asp.asp)}">${asp.asp}°</span> `+
+        `<span style="color:${getPColor(asp.p2)}">${asp.p2}</span>`+
+        `<br><span style="font-size:9px;color:var(--muted)">${asp.date} ${asp.time}</span>`;
+    } else {
+      document.getElementById('tt-asp').textContent = '';
+    }
+  } else {
+    tt.style.display = 'none';
+  }
+  renderAll();
+}
+
+canvas.addEventListener('mousemove', handleMove);
+canvas.addEventListener('touchmove', e => { e.preventDefault(); handleMove(e); }, {passive:false});
+canvas.addEventListener('mouseleave', () => {
+  hoveredCandle=-1; hoveredAspect=-1;
+  document.getElementById('tooltip').style.display='none';
+  renderAll();
+});
+
+// ── Results list ──────────────────────────────────────
+function renderResultsList() {
+  const list = document.getElementById('results-list');
+  document.getElementById('results-label').textContent = `Filtered (${filtered.length})`;
+  if (!filtered.length) {
+    list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:10px">No matches</div>';
+    return;
+  }
+  list.innerHTML = filtered.map((e,i) => {
+    const col = getEntryColor(e);
+    const a = e.asp===0?'☌':e.asp===90?'□':'☍';
+    return `<div class="result-row" onmouseenter="hoveredAspect=${i};renderAll()" onmouseleave="hoveredAspect=-1;renderAll()">
+      <div class="result-bar" style="background:${col}"></div>
+      <div class="result-info">
+        <div class="result-planets" style="color:${col}">${e.p1} ${a} ${e.asp}° ${e.p2}</div>
+        <div class="result-date">${e.date} ${e.time}</div>
+      </div></div>`;
+  }).join('');
+}
+
+// ── Pine Script ───────────────────────────────────────
+function generatePine() {
+  if (!filtered.length) {
+    document.getElementById('pine-code').textContent = '// No aspects match current filters.';
+    document.getElementById('pine-count').textContent = '';
+    return;
+  }
+  document.getElementById('pine-count').textContent = `${filtered.length} entries`;
+  const lp = document.getElementById('label-pos').value;
+  const ts = document.getElementById('text-size').value;
+  const lw = document.getElementById('line-width').value;
+  const ls = {'solid':'line.style_solid','dashed':'line.style_dashed','dotted':'line.style_dotted'}[document.getElementById('line-style').value]||'line.style_dashed';
+  const cm = document.getElementById('color-mode').value;
+  const sp1=document.getElementById('show-p1').checked, sas=(aspMode !== 'off'),
+        sp2=document.getElementById('show-p2').checked, stm=document.getElementById('show-time').checked;
+
+  let code = `//@version=5
+indicator("Astro Aspects", overlay=true, max_lines_count=500, max_labels_count=500)
+
+f_pc(p) =>
+    p=="Sun"?color.rgb(255,208,96):p=="Moon"?color.rgb(192,216,240):p=="Mercury"?color.rgb(144,216,144):
+    p=="Venus"?color.rgb(240,160,192):p=="Mars"?color.rgb(240,96,80):p=="Jupiter"?color.rgb(240,160,80):
+    p=="Saturn"?color.rgb(200,176,128):p=="Uranus"?color.rgb(96,216,216):p=="Neptune"?color.rgb(96,128,240):
+    p=="Pluto"?color.rgb(192,96,208):p=="Chiron"?color.rgb(128,192,160):color.rgb(208,208,208)
+
+f_ac(a) =>
+    a==0?color.rgb(240,192,96):a==90?color.rgb(224,80,80):a==180?color.rgb(128,96,224):color.rgb(136,136,136)
+
+type Ev
+    int yr
+    int mo
+    int dy
+    int hr
+    int mn
+    string p1
+    int asp
+    string p2
+    string ts
+
+var evs = array.new<Ev>(0)
+if barstate.isfirst\n`;
+
+  filtered.forEach(e => {
+    const [mm,dd,yyyy] = e.date.split('/').map(Number);
+    const [hh,mn] = e.time.split(':').map(Number);
+    code += `    array.push(evs,Ev.new(${yyyy},${mm},${dd},${hh},${mn||0},"${e.p1}",${e.asp},"${e.p2}","${e.time.slice(0,5)}"))\n`;
+  });
+
+  code += `
+for i = 0 to array.size(evs)-1
+    e = array.get(evs,i)
+    t = timestamp(e.yr,e.mo,e.dy,e.hr,e.mn)
+    if time==t
+        c = ${cm==='planet1'?'f_pc(e.p1)':cm==='planet2'?'f_pc(e.p2)':'f_ac(e.asp)'}
+        line.new(t,high*1.05,t,low*0.95,xloc=xloc.bar_time,extend=extend.both,color=c,style=${ls},width=${lw})
+        lbl = ""
+${sp1?'        lbl := lbl+(lbl==""?"":\" \")+e.p1\n':''}${sas?'        lbl := lbl+(lbl==""?"":\" \")+str.tostring(e.asp)+"°"\n':''}${sp2?'        lbl := lbl+(lbl==""?"":\" \")+e.p2\n':''}${stm?'        lbl := lbl+(lbl==""?"":\" \")+e.ts\n':''}        label.new(t,math.avg(high,low),text=lbl,xloc=xloc.bar_time,yloc=yloc.price,color=color.new(color.black,85),textcolor=c,style=${lp},size=${ts},textalign=text.align_left,tooltip=e.p1+" "+str.tostring(e.asp)+"° "+e.p2)
+`;
+
+  document.getElementById('pine-code').textContent = code;
+}
+
+function copyCode() {
+  navigator.clipboard.writeText(document.getElementById('pine-code').textContent).then(()=>{
+    const b = document.getElementById('copy-btn');
+    b.textContent='✓ Copied'; b.classList.add('ok');
+    setTimeout(()=>{b.textContent='Copy';b.classList.remove('ok');},2000);
+  });
+}
+
+// ── Stats ─────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('stats-overview').innerHTML = `
+    <div class="stat-box"><div class="stat-num" style="color:var(--c0)">${ALL_ASPECTS.length}</div><div class="stat-lbl">Total</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:#26a69a">${filtered.length}</div><div class="stat-lbl">Filtered</div></div>`;
+
+  const aCounts={};
+  filtered.forEach(e=>aCounts[e.asp]=(aCounts[e.asp]||0)+1);
+  const aspL={0:'☌ Conj',90:'□ Square',180:'☍ Oppos'};
+  document.getElementById('stats-aspects').innerHTML = Object.entries(aCounts).sort((a,b)=>b[1]-a[1]).map(([a,n])=>{
+    const col=getAColor(parseInt(a));
+    const pct=Math.round(n/filtered.length*100);
+    return `<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid var(--border)">
+      <span style="color:${col};font-size:10px;width:80px">${aspL[a]||a+'°'}</span>
+      <div style="flex:1;height:3px;background:var(--s3);border-radius:2px"><div style="width:${pct}%;height:100%;background:${col};border-radius:2px"></div></div>
+      <span style="font-family:'Space Mono';font-size:9px;color:var(--muted)">${n}</span></div>`;
+  }).join('');
+
+  const pCounts={};
+  filtered.forEach(e=>{pCounts[e.p1]=(pCounts[e.p1]||0)+1;pCounts[e.p2]=(pCounts[e.p2]||0)+1;});
+  document.getElementById('stats-planets').innerHTML = Object.entries(pCounts).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([p,n])=>{
+    const col=getPColor(p);
+    const pct=Math.round(n/(filtered.length*2)*100);
+    return `<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid var(--border)">
+      <span style="color:${col};font-size:10px;width:60px">${p}</span>
+      <div style="flex:1;height:3px;background:var(--s3);border-radius:2px"><div style="width:${pct}%;height:100%;background:${col};border-radius:2px"></div></div>
+      <span style="font-family:'Space Mono';font-size:9px;color:var(--muted)">${n}</span></div>`;
+  }).join('');
+}
+
+// ── Tab switch ────────────────────────────────────────
+function showTab(name) {
+  ['filters','results','style','stats'].forEach((n,i)=>{
+    document.querySelectorAll('.stab')[i].classList.toggle('active',n===name);
+    document.getElementById('tab-'+n).classList.toggle('active',n===name);
+  });
+}
+
+// ── Advanced toggle ───────────────────────────────────
+function toggleAdvanced() {
+  const panel = document.getElementById('adv-panel');
+  const btn = document.getElementById('adv-toggle');
+  const open = panel.style.display === 'flex';
+  panel.style.display = open ? 'none' : 'flex';
+  btn.classList.toggle('open', !open);
+  btn.textContent = (open ? '▸' : '▾') + ' Advanced';
+}
+
+// ── Init ─────────────────────────────────────────────
+buildChips();
+const dates = ALL_ASPECTS.map(a=>a.isoDate).sort();
+document.getElementById('date-from').value = dates[0];
+document.getElementById('date-to').value = dates[dates.length-1];
+applyFilters();
+window.addEventListener('resize', resizeCanvas);
+
+// Enter key on ticker
+document.getElementById('ticker').addEventListener('keydown', e => { if(e.key==='Enter') loadChart(); });
+
+resizeCanvas();
+</script>
+</body>
+</html>
