@@ -32,6 +32,13 @@ header h1{font-family:'Space Mono',monospace;font-size:13px;color:var(--c0);lett
 .ds-btn:hover{border-color:var(--border2);color:var(--text)}
 .ds-btn.active{background:var(--c0);color:#06080f;border-color:var(--c0)}
 
+/* timeframe bar */
+.tf-bar{display:flex;align-items:center;gap:2px}
+.tf-btn{padding:5px 8px;border-radius:4px;border:1px solid transparent;background:none;color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:0.15s}
+.tf-btn:hover{color:var(--text);background:var(--s2)}
+.tf-btn.active{background:var(--s2);color:var(--c0);border-color:var(--border)}
+.tf-sep{width:1px;height:16px;background:var(--border);margin:0 3px}
+
 /* ticker bar */
 .ticker-bar{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
 .ticker-wrap{position:relative}
@@ -166,17 +173,25 @@ canvas{display:block;position:absolute;top:0;left:0}
       <input type="text" id="ticker" value="SPY" maxlength="20" placeholder="Search ticker…" autocomplete="off" oninput="onTickerInput()" onkeydown="onTickerKey(event)">
       <div class="suggest-box" id="suggest-box"></div>
     </div>
-    <select id="interval">
-      <option value="1d" selected>Daily</option>
-      <option value="1wk">Weekly</option>
-      <option value="1mo">Monthly</option>
-    </select>
-    <select id="range">
-      <option value="6mo">6 months</option>
-      <option value="1y" selected>1 year</option>
-      <option value="2y">2 years</option>
-      <option value="3y">3 years</option>
-    </select>
+    <div class="tf-bar" id="tf-bar">
+      <button class="tf-btn" onclick="setTF('1m','1d',this)">1m</button>
+      <button class="tf-btn" onclick="setTF('5m','5d',this)">5m</button>
+      <button class="tf-btn" onclick="setTF('15m','1mo',this)">15m</button>
+      <button class="tf-btn" onclick="setTF('30m','1mo',this)">30m</button>
+      <button class="tf-btn" onclick="setTF('1h','3mo',this)">1H</button>
+      <span class="tf-sep"></span>
+      <button class="tf-btn" onclick="setTF('1d','1mo',this)">1M</button>
+      <button class="tf-btn" onclick="setTF('1d','3mo',this)">3M</button>
+      <button class="tf-btn" onclick="setTF('1d','6mo',this)">6M</button>
+      <button class="tf-btn active" onclick="setTF('1d','1y',this)">1Y</button>
+      <button class="tf-btn" onclick="setTF('1d','2y',this)">2Y</button>
+      <button class="tf-btn" onclick="setTF('1d','3y',this)">3Y</button>
+      <span class="tf-sep"></span>
+      <button class="tf-btn" onclick="setTF('1wk','5y',this)">1W</button>
+      <button class="tf-btn" onclick="setTF('1mo','10y',this)">1Mo</button>
+    </div>
+    <input type="hidden" id="interval" value="1d">
+    <input type="hidden" id="range" value="1y">
     <button class="load-btn" id="load-btn" onclick="loadChart()">▶ Load</button>
     <span class="status" id="status">Enter ticker and load</span>
   </div>
@@ -203,6 +218,45 @@ canvas{display:block;position:absolute;top:0;left:0}
           </div>
         </div>
         <div class="chip-grid" style="margin-top:7px" id="aspect-chips"></div>
+        <div class="chip-grid" style="margin-top:5px;opacity:0.3" title="Coming soon">
+          <div class="chip" style="border-color:#506080;color:#506080;cursor:default">△ 120°</div>
+          <div class="chip" style="border-color:#506080;color:#506080;cursor:default">⚹ 60°</div>
+          <div class="chip" style="border-color:#506080;color:#506080;cursor:default">∠ 45°</div>
+          <div class="chip" style="border-color:#506080;color:#506080;cursor:default">⊼ 135°</div>
+          <div class="chip" style="border-color:#506080;color:#506080;cursor:default">⊻ 150°</div>
+        </div>
+      </div>
+
+      <!-- Projection -->
+      <div>
+        <div class="sec">Projection
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:9px;text-transform:none;letter-spacing:0">
+            <input type="checkbox" id="proj-enabled" onchange="renderAll()"> Enable
+          </label>
+        </div>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:7px">
+          <div class="form-row">
+            <div>
+              <label class="fl">Look-back</label>
+              <select class="ctl" id="proj-lookback" onchange="renderAll()">
+                <option value="5">5 days</option>
+                <option value="10" selected>10 days</option>
+                <option value="20">20 days</option>
+                <option value="30">30 days</option>
+              </select>
+            </div>
+            <div>
+              <label class="fl">Project</label>
+              <select class="ctl" id="proj-forward" onchange="renderAll()">
+                <option value="5">5 days</option>
+                <option value="10" selected>10 days</option>
+                <option value="20">20 days</option>
+                <option value="30">30 days</option>
+              </select>
+            </div>
+          </div>
+          <div id="proj-summary" style="font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;line-height:1.7;display:none"></div>
+        </div>
       </div>
 
       <!-- Date range -->
@@ -3017,6 +3071,15 @@ function applyFilters() {
 }
 
 // ── Yahoo Finance fetch ────────────────────────────────
+// ── Timeframe selector ────────────────────────────────
+function setTF(interval, range, btn) {
+  document.getElementById('interval').value = interval;
+  document.getElementById('range').value = range;
+  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (candles.length) loadChart();
+}
+
 async function loadChart() {
   const ticker = document.getElementById('ticker').value.trim().toUpperCase();
   const interval = document.getElementById('interval').value;
@@ -3071,11 +3134,14 @@ async function loadChart() {
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth()+1).padStart(2,'0');
     const dd = String(d.getDate()).padStart(2,'0');
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mn = String(d.getMinutes()).padStart(2,'0');
     return {
       ts: d.getTime(),
       open: open[i], high: high[i], low: low[i], close: close[i],
       dateStr: `${yyyy}-${mm}-${dd}`,
-      displayDate: `${mm}/${dd}/${yyyy}`
+      timeStr: `${hh}:${mn}`,
+      displayDate: `${mm}/${dd} ${hh}:${mn}`
     };
   }).filter(Boolean);
 
@@ -3085,11 +3151,15 @@ async function loadChart() {
     return;
   }
 
-  // Auto-set date range from candle data
+  // Auto-set date range from candle data — keep future date-to if already set
   const firstDate = candles[0].dateStr;
   const lastDate = candles[candles.length-1].dateStr;
   document.getElementById('date-from').value = firstDate;
-  document.getElementById('date-to').value = lastDate;
+  const currentTo = document.getElementById('date-to').value;
+  if (!currentTo || currentTo <= lastDate) {
+    const ft = new Date(); ft.setDate(ft.getDate()+90);
+    document.getElementById('date-to').value = ft.toISOString().slice(0,10);
+  }
 
   const meta = result.meta;
   const sym = meta.symbol || ticker;
@@ -3129,7 +3199,6 @@ function renderAll() {
   const cH = H - PAD.top - PAD.bottom;
   const n = candles.length;
   const candleW = Math.max(1, Math.floor(cW / n) - 1);
-  const spacing = cW / n;
 
   // Price range
   let minP = Infinity, maxP = -Infinity;
@@ -3149,19 +3218,74 @@ function renderAll() {
   const showP2 = document.getElementById('show-p2').checked;
   const showTime = document.getElementById('show-time').checked;
 
+  // Work out how many future-transit columns we need
+  const today = new Date().toISOString().slice(0,10);
+  const futureAsps = filtered.filter(asp => asp.isoDate > candles[n-1].dateStr);
+  const futureCols = futureAsps.length > 0
+    ? Math.min(futureAsps.length, 60) // cap at 60 future slots
+    : 0;
+  const totalCols = n + futureCols;
+  const spacingF = cW / totalCols; // recalculated spacing to fit future cols
+
+  // Re-derive candleW and priceToY with new spacing
+  const candleWF = Math.max(1, Math.floor(spacingF / n * candleW));
+
+  // Helper: get x for a candle index (historical) or future slot
+  const colX = idx => PAD.left + idx * spacingF + spacingF / 2;
+
+  // Shade future zone
+  if (futureCols > 0) {
+    const futureX = PAD.left + n * spacingF;
+    ctx.fillStyle = 'rgba(255,255,255,0.02)';
+    ctx.fillRect(futureX, PAD.top, futureCols * spacingF, cH);
+    // "TODAY" line
+    ctx.save();
+    ctx.strokeStyle = '#2a3d5a';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,4]);
+    ctx.beginPath();
+    ctx.moveTo(futureX, PAD.top);
+    ctx.lineTo(futureX, H - PAD.bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = '8px Space Mono';
+    ctx.fillStyle = '#2a3d5a';
+    ctx.textAlign = 'left';
+    ctx.fillText('NOW', futureX + 3, PAD.top + 10);
+    ctx.restore();
+  }
+
+  // Build a map: future transit isoDate → x position
+  const futureDateToX = {};
+  futureAsps.slice(0, futureCols).forEach((asp, fi) => {
+    // group same-date transits at the same x
+    if (!futureDateToX[asp.isoDate]) {
+      futureDateToX[asp.isoDate] = colX(n + Object.keys(futureDateToX).length);
+    }
+  });
+
+  // Draw all aspect lines (historical + future)
   filtered.forEach((asp, ai) => {
-    // Find matching candle by date
     const ci = candles.findIndex(c => c.dateStr === asp.isoDate);
-    if (ci < 0) return;
-    const x = PAD.left + ci * spacing + spacing/2;
+    const isFuture = asp.isoDate > candles[n-1].dateStr;
+    let x;
+    if (ci >= 0) {
+      x = colX(ci);
+    } else if (isFuture && futureDateToX[asp.isoDate]) {
+      x = futureDateToX[asp.isoDate];
+    } else {
+      return;
+    }
+
     const col = getEntryColor(asp);
     const isHL = hoveredAspect === ai;
 
     ctx.save();
     ctx.strokeStyle = isHL ? '#ffffff' : col;
     ctx.lineWidth = isHL ? lineWidth+1 : lineWidth;
-    ctx.globalAlpha = isHL ? 1 : 0.65;
-    if (lineStyle==='dashed') ctx.setLineDash([6,4]);
+    ctx.globalAlpha = isHL ? 1 : (isFuture ? 0.9 : 0.65);
+    if (isFuture) ctx.setLineDash([4, 3]);
+    else if (lineStyle==='dashed') ctx.setLineDash([6,4]);
     else if (lineStyle==='dotted') ctx.setLineDash([2,4]);
     else ctx.setLineDash([]);
     ctx.beginPath();
@@ -3187,7 +3311,7 @@ function renderAll() {
 
     ctx.translate(x, labelY);
     ctx.rotate(labelSide==='right' ? -Math.PI/2 : Math.PI/2);
-    ctx.fillStyle = 'rgba(7,16,29,0.85)';
+    ctx.fillStyle = isFuture ? 'rgba(7,16,29,0.6)' : 'rgba(7,16,29,0.85)';
     ctx.strokeStyle = isHL ? '#fff' : col;
     ctx.lineWidth = 1;
     roundRect(ctx, -tw/2-pd, -fontSize-pd+2, tw+pd*2, lh, 3);
@@ -3205,10 +3329,10 @@ function renderAll() {
   const dnCol = document.getElementById('col-dn').value;
 
   candles.forEach((c, i) => {
-    const x = PAD.left + i * spacing + spacing/2;
+    const x = colX(i);
     const isHL = hoveredCandle === i;
     const col = c.close >= c.open ? upCol : dnCol;
-    const ox = Math.max(1, candleW);
+    const ox = Math.max(1, Math.floor(spacingF) - 1);
     const bodyTop = priceToY(Math.max(c.open,c.close));
     const bodyBot = priceToY(Math.min(c.open,c.close));
     const bodyH = Math.max(1, bodyBot - bodyTop);
@@ -3231,7 +3355,10 @@ function renderAll() {
 
   // Price axis labels
   drawPriceAxis(W, H, minP, maxP, priceToY, cH);
-  drawDateAxis(W, H, spacing, n);
+  drawDateAxis(W, H, spacingF, n, futureDateToX);
+
+  // Projection overlay
+  drawProjection(W, H, spacingF, priceToY, cH);
 }
 
 function drawGrid(W, H, minP, maxP, priceToY, cH) {
@@ -3266,16 +3393,165 @@ function drawPriceAxis(W, H, minP, maxP, priceToY, cH) {
   }
 }
 
-function drawDateAxis(W, H, spacing, n) {
+function drawDateAxis(W, H, spacing, n, futureDateToX) {
   ctx.font = '8px Space Mono';
   ctx.textAlign = 'center';
   ctx.fillStyle = '#506080';
-  const step = Math.max(1, Math.round(n/8));
-  for (let i=0; i<n; i+=step) {
-    const x = PAD.left + i*spacing + spacing/2;
-    const d = candles[i].dateStr.slice(5); // MM-DD
-    ctx.fillText(d, x, H-PAD.bottom+14);
+  const interval = document.getElementById('interval').value;
+  const intraday = interval.endsWith('m') || interval === '1h';
+  const step = Math.max(1, Math.round(n / 8));
+  for (let i = 0; i < n; i += step) {
+    const x = PAD.left + i * spacing + spacing / 2;
+    const c = candles[i];
+    const label = intraday ? `${c.dateStr.slice(5)} ${c.timeStr}` : c.dateStr.slice(5);
+    ctx.fillText(label, x, H - PAD.bottom + 14);
   }
+  // Future date labels
+  if (futureDateToX) {
+    ctx.fillStyle = '#2a3d5a';
+    Object.entries(futureDateToX).forEach(([date, x]) => {
+      ctx.fillText(date.slice(5), x, H - PAD.bottom + 14);
+    });
+  }
+}
+
+function drawProjection(W, H, spacing, priceToY, cH) {
+  if (!document.getElementById('proj-enabled').checked) {
+    document.getElementById('proj-summary').style.display = 'none';
+    return;
+  }
+  const lookback = parseInt(document.getElementById('proj-lookback').value);
+  const forward  = parseInt(document.getElementById('proj-forward').value);
+  const n = candles.length;
+
+  // For each filtered aspect that has candle data, measure % moves
+  // from the transit candle over the next `lookback` days
+  const moves = []; // array of arrays: each is % move per day
+  filtered.forEach(asp => {
+    const ci = candles.findIndex(c => c.dateStr === asp.isoDate);
+    // Only use past transits (not the last `forward` candles)
+    if (ci < 1 || ci > n - forward - 2) return;
+    const base = candles[ci].close;
+    const series = [];
+    for (let d = 1; d <= lookback; d++) {
+      const idx = ci + d;
+      if (idx >= n) break;
+      series.push((candles[idx].close - base) / base * 100);
+    }
+    if (series.length === lookback) moves.push(series);
+  });
+
+  if (moves.length < 2) {
+    document.getElementById('proj-summary').style.display = 'block';
+    document.getElementById('proj-summary').textContent = 'Not enough past transits to project.';
+    return;
+  }
+
+  // Average % move at each day offset
+  const avgMove = [];
+  for (let d = 0; d < lookback; d++) {
+    const vals = moves.map(m => m[d]).filter(v => v !== undefined);
+    avgMove.push(vals.reduce((a,b) => a+b, 0) / vals.length);
+  }
+
+  // Find the most recent transit that is at or near the last candle
+  // (last filtered aspect that has a candle match within the last `forward` bars)
+  let anchorIdx = -1;
+  let anchorAsp = null;
+  for (let i = filtered.length - 1; i >= 0; i--) {
+    const ci = candles.findIndex(c => c.dateStr === filtered[i].isoDate);
+    if (ci >= 0 && ci >= n - forward - 1) { anchorIdx = ci; anchorAsp = filtered[i]; break; }
+  }
+  // Also accept the very last transit even if slightly older
+  if (anchorIdx < 0) {
+    for (let i = filtered.length - 1; i >= 0; i--) {
+      const ci = candles.findIndex(c => c.dateStr === filtered[i].isoDate);
+      if (ci >= 0) { anchorIdx = ci; anchorAsp = filtered[i]; break; }
+    }
+  }
+  if (anchorIdx < 0) return;
+
+  const anchorClose = candles[anchorIdx].close;
+  const anchorX = PAD.left + anchorIdx * spacing + spacing/2;
+
+  // Build projected price points extending beyond last candle
+  const projPoints = [{ x: anchorX, price: anchorClose }];
+  for (let d = 1; d <= forward; d++) {
+    const pct = avgMove[Math.min(d-1, avgMove.length-1)];
+    const price = anchorClose * (1 + pct/100);
+    const xi = anchorIdx + d;
+    const px = PAD.left + xi * spacing + spacing/2;
+    projPoints.push({ x: px, price });
+  }
+
+  // Draw shaded band (±1 stddev)
+  const stddevs = [];
+  for (let d = 0; d < lookback; d++) {
+    const vals = moves.map(m => m[d]).filter(v => v !== undefined);
+    const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+    const variance = vals.reduce((a,b)=>a+(b-mean)**2,0)/vals.length;
+    stddevs.push(Math.sqrt(variance));
+  }
+
+  ctx.save();
+  // Upper band
+  ctx.beginPath();
+  projPoints.forEach((pt, i) => {
+    const sd = stddevs[Math.min(i, stddevs.length-1)] || 0;
+    const upPrice = pt.price * (1 + sd/100);
+    const py = priceToY(upPrice);
+    i === 0 ? ctx.moveTo(pt.x, py) : ctx.lineTo(pt.x, py);
+  });
+  // Lower band (reverse)
+  [...projPoints].reverse().forEach((pt, i) => {
+    const sd = stddevs[Math.min(projPoints.length-1-i, stddevs.length-1)] || 0;
+    const dnPrice = pt.price * (1 - sd/100);
+    ctx.lineTo(pt.x, priceToY(dnPrice));
+  });
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(240,192,96,0.07)';
+  ctx.fill();
+
+  // Centre line
+  ctx.beginPath();
+  projPoints.forEach((pt, i) => {
+    const py = priceToY(pt.price);
+    i === 0 ? ctx.moveTo(pt.x, py) : ctx.lineTo(pt.x, py);
+  });
+  ctx.strokeStyle = '#f0c060';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 4]);
+  ctx.globalAlpha = 0.85;
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Anchor dot
+  ctx.beginPath();
+  ctx.arc(anchorX, priceToY(anchorClose), 4, 0, Math.PI*2);
+  ctx.fillStyle = '#f0c060';
+  ctx.globalAlpha = 1;
+  ctx.fill();
+
+  // End label
+  const lastPt = projPoints[projPoints.length-1];
+  const finalPct = avgMove[avgMove.length-1];
+  const sign = finalPct >= 0 ? '+' : '';
+  ctx.font = 'bold 9px Space Mono';
+  ctx.fillStyle = finalPct >= 0 ? '#26a69a' : '#ef5350';
+  ctx.textAlign = 'left';
+  ctx.fillText(`${sign}${finalPct.toFixed(1)}%`, lastPt.x + 4, priceToY(lastPt.price) + 3);
+
+  ctx.restore();
+
+  // Summary text
+  const upCount = moves.filter(m => m[m.length-1] > 0).length;
+  const pctUp = Math.round(upCount / moves.length * 100);
+  const summary = document.getElementById('proj-summary');
+  summary.style.display = 'block';
+  summary.innerHTML =
+    `Sampled <b style="color:var(--text)">${moves.length}</b> past transits · ` +
+    `Avg <b style="color:${finalPct>=0?'#26a69a':'#ef5350'}">${sign}${finalPct.toFixed(2)}%</b> over ${lookback}d · ` +
+    `<b style="color:var(--text)">${pctUp}%</b> bullish`;
 }
 
 function roundRect(ctx,x,y,w,h,r) {
@@ -3307,7 +3583,10 @@ function handleMove(e) {
   const W = canvas.width;
   const n = candles.length;
   const cW = W - PAD.left - PAD.right;
-  const spacing = cW / n;
+  const futureAsps = filtered.filter(asp => asp.isoDate > candles[n-1].dateStr);
+  const futureCols = Math.min(futureAsps.length, 60);
+  const totalCols = n + futureCols;
+  const spacing = cW / totalCols;
   const ci = Math.round((x - PAD.left - spacing/2) / spacing);
   hoveredCandle = (ci>=0 && ci<n) ? ci : -1;
 
@@ -3513,7 +3792,9 @@ function toggleAdvanced() {
 buildChips();
 const dates = ALL_ASPECTS.map(a=>a.isoDate).sort();
 document.getElementById('date-from').value = dates[0];
-document.getElementById('date-to').value = dates[dates.length-1];
+// Default date-to: 90 days ahead so future transits are visible
+const futureDefault = new Date(); futureDefault.setDate(futureDefault.getDate()+90);
+document.getElementById('date-to').value = futureDefault.toISOString().slice(0,10);
 applyFilters();
 window.addEventListener('resize', resizeCanvas);
 
