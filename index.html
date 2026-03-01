@@ -34,8 +34,15 @@ header h1{font-family:'Space Mono',monospace;font-size:13px;color:var(--c0);lett
 
 /* ticker bar */
 .ticker-bar{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
-.ticker-bar input{background:var(--s2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;padding:5px 8px;width:70px;outline:none;text-transform:uppercase}
-.ticker-bar input:focus{border-color:var(--c0)}
+.ticker-wrap{position:relative}
+.ticker-wrap input{background:var(--s2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;padding:5px 8px;width:140px;outline:none;text-transform:uppercase}
+.ticker-wrap input:focus{border-color:var(--c0)}
+.suggest-box{position:absolute;top:calc(100% + 4px);left:0;min-width:220px;background:var(--s1);border:1px solid var(--border2);border-radius:6px;z-index:999;overflow:hidden;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.6)}
+.suggest-item{padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.suggest-item:last-child{border-bottom:none}
+.suggest-item:hover,.suggest-item.active{background:var(--s2)}
+.suggest-sym{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--c0);min-width:50px}
+.suggest-name{font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ticker-bar select{background:var(--s2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Space Mono',monospace;font-size:11px;padding:5px 6px;outline:none}
 .load-btn{background:var(--c0);color:#06080f;border:none;border-radius:5px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;padding:6px 12px;cursor:pointer;letter-spacing:0.5px;white-space:nowrap;transition:0.15s}
 .load-btn:hover{background:#f0d070}
@@ -155,7 +162,10 @@ canvas{display:block;position:absolute;top:0;left:0}
     <button class="ds-btn" id="ds-btn-Prs" onclick="switchDataset('Prs')">Prs</button>
   </div>
   <div class="ticker-bar">
-    <input type="text" id="ticker" value="SPY" maxlength="10" placeholder="SPY">
+    <div class="ticker-wrap" id="ticker-wrap">
+      <input type="text" id="ticker" value="SPY" maxlength="20" placeholder="Search ticker…" autocomplete="off" oninput="onTickerInput()" onkeydown="onTickerKey(event)">
+      <div class="suggest-box" id="suggest-box"></div>
+    </div>
     <select id="interval">
       <option value="1d" selected>Daily</option>
       <option value="1wk">Weekly</option>
@@ -3507,8 +3517,100 @@ document.getElementById('date-to').value = dates[dates.length-1];
 applyFilters();
 window.addEventListener('resize', resizeCanvas);
 
-// Enter key on ticker
-document.getElementById('ticker').addEventListener('keydown', e => { if(e.key==='Enter') loadChart(); });
+// ── Ticker autocomplete ───────────────────────────────
+let suggestIndex = -1;
+let suggestItems = [];
+let suggestDebounce = null;
+
+async function onTickerInput() {
+  const q = document.getElementById('ticker').value.trim();
+  clearTimeout(suggestDebounce);
+  if (q.length < 1) { hideSuggest(); return; }
+  suggestDebounce = setTimeout(() => fetchSuggestions(q), 220);
+}
+
+async function fetchSuggestions(q) {
+  const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=8&newsCount=0&listsCount=0`;
+  const proxies = [
+    u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  ];
+  for (const makeProxy of proxies) {
+    try {
+      const res = await fetch(makeProxy(url), { signal: AbortSignal.timeout(4000) });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const quotes = data?.quotes || [];
+      suggestItems = quotes.filter(q => q.symbol).map(q => ({ sym: q.symbol, name: q.shortname || q.longname || '' }));
+      renderSuggest();
+      return;
+    } catch(e) { continue; }
+  }
+}
+
+function renderSuggest() {
+  const box = document.getElementById('suggest-box');
+  if (!suggestItems.length) { hideSuggest(); return; }
+  suggestIndex = -1;
+  box.innerHTML = suggestItems.map((it, i) =>
+    `<div class="suggest-item" data-i="${i}" onmousedown="pickSuggest(${i})">
+      <span class="suggest-sym">${it.sym}</span>
+      <span class="suggest-name">${it.name}</span>
+    </div>`
+  ).join('');
+  box.style.display = 'block';
+}
+
+function hideSuggest() {
+  document.getElementById('suggest-box').style.display = 'none';
+  suggestItems = [];
+  suggestIndex = -1;
+}
+
+function pickSuggest(i) {
+  document.getElementById('ticker').value = suggestItems[i].sym;
+  hideSuggest();
+  loadChart();
+}
+
+function onTickerKey(e) {
+  const box = document.getElementById('suggest-box');
+  const visible = box.style.display === 'block';
+  if (e.key === 'ArrowDown') {
+    if (!visible) return;
+    e.preventDefault();
+    suggestIndex = Math.min(suggestIndex + 1, suggestItems.length - 1);
+    updateSuggestHighlight();
+  } else if (e.key === 'ArrowUp') {
+    if (!visible) return;
+    e.preventDefault();
+    suggestIndex = Math.max(suggestIndex - 1, -1);
+    updateSuggestHighlight();
+  } else if (e.key === 'Enter') {
+    if (visible && suggestIndex >= 0) {
+      pickSuggest(suggestIndex);
+    } else {
+      hideSuggest();
+      loadChart();
+    }
+  } else if (e.key === 'Escape') {
+    hideSuggest();
+  }
+}
+
+function updateSuggestHighlight() {
+  document.querySelectorAll('.suggest-item').forEach((el, i) => {
+    el.classList.toggle('active', i === suggestIndex);
+  });
+  if (suggestIndex >= 0) {
+    document.getElementById('ticker').value = suggestItems[suggestIndex].sym;
+  }
+}
+
+// Close suggest when clicking outside
+document.addEventListener('click', e => {
+  if (!document.getElementById('ticker-wrap').contains(e.target)) hideSuggest();
+});
 
 resizeCanvas();
 </script>
