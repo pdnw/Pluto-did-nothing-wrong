@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SE Aspectarian — VSOP87</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0c1a;
+    --parchment: #f5f0e8;
+    --gold: #c9a84c;
+    --gold-dim: #8a6e30;
+    --rust: #8b3a2a;
+    --teal: #2a6b6b;
+    --panel: #1a1828;
+    --panel2: #13111f;
+    --border: rgba(201,168,76,0.25);
+    --text: #e8e0cc;
+    --muted: rgba(232,224,204,0.5);
+    --sun-col: #FFD700; --moon-col: #C0C0C0; --mer-col: #98FB98;
+    --ven-col: #FFB6C1; --mar-col: #FF6B6B; --jup-col: #FFA500;
+    --sat-col: #D2B48C; --ura-col: #7FFFD4; --nep-col: #6495ED;
+    --plu-col: #DDA0DD;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--panel2);
+    color: var(--text);
+    font-family: 'Crimson Pro', serif;
+    font-size: 16px;
+    min-height: 100vh;
+    background-image: 
+      radial-gradient(ellipse at 20% 20%, rgba(201,168,76,0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(42,107,107,0.07) 0%, transparent 50%);
+  }
+  header {
+    text-align: center;
+    padding: 2rem 1rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(201,168,76,0.08) 0%, transparent 100%);
+  }
+  header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.4rem, 5vw, 2.2rem);
+    color: var(--gold);
+    letter-spacing: 0.15em;
+    text-shadow: 0 0 30px rgba(201,168,76,0.3);
+  }
+  header p {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 0.9rem;
+    margin-top: 0.3rem;
+  }
+
+  .container { max-width: 700px; margin: 0 auto; padding: 0 0.75rem 3rem; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-top: 1.2rem;
+    overflow: hidden;
+  }
+  .card-header {
+    background: linear-gradient(90deg, rgba(201,168,76,0.12), transparent);
+    padding: 0.6rem 1rem;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+  }
+  .card-body { padding: 1rem; }
+
+  label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+  input[type="date"], input[type="time"], input[type="number"], select {
+    width: 100%;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 0.5rem 0.7rem;
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--gold); }
+  select option { background: var(--panel); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.6rem; }
+
+  .planet-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.4rem;
+    margin-top: 0.3rem;
+  }
+  .planet-btn {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    padding: 0.35rem 0.2rem;
+    font-size: 1.1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    line-height: 1;
+  }
+  .planet-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.1); }
+  .planet-btn span { display: block; font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 0.05em; margin-top: 0.15rem; color: inherit; opacity: 0.8; }
+
+  .aspect-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+    margin-top: 0.3rem;
+  }
+  .aspect-btn {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    padding: 0.3rem 0.2rem;
+    font-size: 0.75rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Crimson Pro', serif;
+    user-select: none;
+  }
+  .aspect-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.1); }
+  .aspect-btn .sym { font-size: 1rem; display: block; }
+
+  .orb-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.6rem; }
+  .orb-row input { width: 100%; }
+
+  .run-btn {
+    width: 100%;
+    padding: 0.85rem;
+    background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+    border: none;
+    border-radius: 5px;
+    color: var(--ink);
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    margin-top: 1.2rem;
+    transition: opacity 0.2s, transform 0.1s;
+    text-transform: uppercase;
+  }
+  .run-btn:active { transform: scale(0.98); opacity: 0.85; }
+  .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(90deg, rgba(42,107,107,0.12), transparent);
+  }
+  .results-title { font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 0.15em; color: var(--teal); text-transform: uppercase; }
+  .results-count { font-size: 0.8rem; color: var(--muted); }
+
+  .filter-bar {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .filter-chip {
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-size: 0.75rem;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.15s;
+    font-family: 'Crimson Pro', serif;
+  }
+  .filter-chip.on { background: rgba(42,107,107,0.2); border-color: var(--teal); color: var(--text); }
+
+  .aspect-list { max-height: 65vh; overflow-y: auto; }
+
+  /* Day separator */
+  .day-sep {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    color: var(--gold-dim);
+    background: rgba(201,168,76,0.06);
+    padding: 0.25rem 1rem;
+    border-bottom: 1px solid var(--border);
+    border-top: 1px solid rgba(201,168,76,0.08);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .aspect-item {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    align-items: center;
+    padding: 0.45rem 0.8rem;
+    border-bottom: 1px solid rgba(255,255,255,0.035);
+    gap: 0.6rem;
+    transition: background 0.1s;
+  }
+  .aspect-item:hover { background: rgba(255,255,255,0.02); }
+
+  /* Time cell */
+  .asp-date { font-size: 0.7rem; line-height: 1.2; text-align: center; }
+  .asp-date .time { color: var(--gold-dim); font-family: 'Courier New', monospace; font-size: 0.68rem; }
+
+  /* Middle cell: symbols + names */
+  .asp-mid {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+  }
+  .asp-body {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.18rem;
+  }
+  .asp-bname {
+    font-family: 'Cinzel', serif;
+    font-size: 0.52rem;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-top: 0.05rem;
+  }
+  .asp-sym { font-size: 1rem; }
+  .natal-sup { font-size: 0.45rem; color: var(--teal); vertical-align: super; margin-left: 0.1rem; }
+
+  /* Position cell */
+  .asp-pos { font-size: 0.72rem; text-align: right; line-height: 1.45; font-family: 'Courier New', monospace; }
+  .pos1 { color: var(--text); }
+  .pos2 { color: var(--gold-dim); }
+
+  .conjunction { color: #e0c060; }
+  .opposition { color: #e06060; }
+  .trine { color: #60c060; }
+  .square { color: #e07040; }
+  .sextile { color: #60b0e0; }
+  .quincunx { color: #b060c0; }
+  .semisquare { color: #c08040; }
+  .sesquiquadrate { color: #c06030; }
+  .semisextile { color: #80c080; }
+  .quintile { color: #90c0d0; }
+  .biquintile { color: #7090d0; }
+
+  .loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+  }
+  .spinner {
+    width: 30px; height: 30px;
+    border: 2px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .no-results {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .tab-row {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1;
+    padding: 0.5rem;
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+  .toggle-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.6rem; }
+  .toggle { position: relative; width: 36px; height: 20px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-track {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+    border-radius: 20px; cursor: pointer; transition: background 0.2s;
+  }
+  .toggle input:checked + .toggle-track { background: rgba(201,168,76,0.3); border-color: var(--gold); }
+  .toggle-thumb {
+    position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; background: var(--muted);
+    border-radius: 50%; transition: transform 0.2s, background 0.2s;
+    pointer-events: none;
+  }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); background: var(--gold); }
+  .toggle-label { font-size: 0.85rem; color: var(--muted); cursor: pointer; }
+
+  .section-sep { margin-top: 0.8rem; }
+
+  /* Aspect tag in list items */
+  .asp-tag {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    letter-spacing: 0.05em;
+    padding: 0.08rem 0.25rem;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.25);
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .asp-tag.conjunction    { color: #e0c060; border-color: rgba(224,192,96,0.3);  }
+  .asp-tag.opposition     { color: #e06060; border-color: rgba(224,96,96,0.3);   }
+  .asp-tag.trine          { color: #60c060; border-color: rgba(96,192,96,0.3);   }
+  .asp-tag.square         { color: #e07040; border-color: rgba(224,112,64,0.3);  }
+  .asp-tag.sextile        { color: #60b0e0; border-color: rgba(96,176,224,0.3);  }
+  .asp-tag.quincunx       { color: #b060c0; border-color: rgba(176,96,192,0.3);  }
+  .asp-tag.semisquare     { color: #c08040; border-color: rgba(192,128,64,0.3);  }
+  .asp-tag.sesquiquadrate { color: #c06030; border-color: rgba(192,96,48,0.3);   }
+  .asp-tag.semisextile    { color: #80c080; border-color: rgba(128,192,128,0.3); }
+  .asp-tag.quintile       { color: #90c0d0; border-color: rgba(144,192,208,0.3); }
+  .asp-tag.biquintile     { color: #7090d0; border-color: rgba(112,144,208,0.3); }
+
+  /* Aspect button extras */
+  .asp-btn-name { display: block; font-size: 0.7rem; line-height: 1.3; }
+  .asp-btn-deg  { display: block; font-family: 'Cinzel',serif; font-size: 0.55rem; color: var(--gold-dim); letter-spacing: 0.05em; margin-top: 0.1rem; }
+  .aspect-btn   { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+  /* Degree view toggle in header */
+  .deg-toggle-wrap {
+    display: flex; align-items: center; gap: 0.25rem; cursor: pointer;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    transition: border-color 0.2s;
+  }
+  .deg-toggle-wrap:hover { border-color: var(--gold-dim); }
+  .deg-toggle-wrap input { display: none; }
+  .deg-toggle-track {
+    width: 26px; height: 14px; background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border); border-radius: 10px;
+    position: relative; transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .deg-toggle-track::after {
+    content: ''; position: absolute; top: 1px; left: 1px;
+    width: 10px; height: 10px; background: var(--muted);
+    border-radius: 50%; transition: transform 0.2s, background 0.2s;
+  }
+  .deg-toggle-wrap input:checked ~ .deg-toggle-track { background: rgba(201,168,76,0.3); border-color: var(--gold); }
+  .deg-toggle-wrap input:checked ~ .deg-toggle-track::after { transform: translateX(12px); background: var(--gold); }
+  .deg-toggle-label { font-family: 'Cinzel',serif; font-size: 0.6rem; letter-spacing: 0.1em; color: var(--muted); }
+  .deg-toggle-wrap:has(input:checked) .deg-toggle-label { color: var(--gold); }
+
+  /* scrollbar */
+  .aspect-list::-webkit-scrollbar { width: 4px; }
+  .aspect-list::-webkit-scrollbar-track { background: transparent; }
+  .aspect-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* View mode bar */
+  .view-mode-bar {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+  }
+  .vmode-btn {
+    flex: 1;
+    padding: 0.45rem 0.5rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .vmode-btn.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(201,168,76,0.05); }
+
+  /* Text preview panel */
+  .txt-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.8rem;
+    border-top: 1px solid var(--border);
+    background: rgba(0,0,0,0.3);
+  }
+  #textPreviewArea {
+    width: 100%;
+    min-height: 260px;
+    max-height: 50vh;
+    background: rgba(0,0,0,0.5);
+    border: none;
+    border-top: 1px solid var(--border);
+    color: #b8d8b0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    padding: 0.8rem 1rem;
+    resize: vertical;
+    outline: none;
+  }
+
+  .info-badge {
+    display: inline-block;
+    background: rgba(201,168,76,0.1);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    color: var(--gold-dim);
+    margin-left: 0.5rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.05em;
+  }
+  .export-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    font-size: 0.7rem;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.1em;
+    transition: all 0.15s;
+  }
+  .export-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .ingress-arrow{font-size:.9rem;margin:0 .15rem;color:var(--gold)}
+  .ingress-arrow.rx{color:var(--rust,#8b3a2a)}
+  .rx-badge{font-family:'Cinzel',serif;font-size:.5rem;color:var(--rust,#8b3a2a);border:1px solid rgba(139,58,42,.35);border-radius:3px;padding:.04rem .18rem;background:rgba(139,58,42,.08);vertical-align:middle;margin-left:.2rem}
+  .lunar-icon{font-size:1.1rem;margin-right:.25rem}
+  .lunar-badge{font-family:'Cinzel',serif;font-size:.55rem;padding:.06rem .28rem;border-radius:3px;border:1px solid;margin-right:.3rem}
+  .lunar-badge.new{color:#a0c0d8;border-color:rgba(160,192,216,.35);background:rgba(160,192,216,.08)}
+  .lunar-badge.full{color:#f0d860;border-color:rgba(240,216,96,.35);background:rgba(240,216,96,.08)}
+  .lunar-badge.solar-ecl{color:#ff9040;border-color:rgba(255,144,64,.4);background:rgba(255,144,64,.1)}
+  .lunar-badge.lunar-ecl{color:#e06060;border-color:rgba(224,96,96,.4);background:rgba(224,96,96,.1)}
+  .ecl-note{font-size:.68rem;color:var(--muted);margin-left:.3rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>☿ SE Aspectarian</h1>
+  <p>VSOP87 · 1500–3800 · Aspects · Ingresses · Lunar Phases · Eclipses</p>
+</header>
+
+<div class="container">
+
+  <!-- Date Range -->
+  <div class="card">
+    <div class="card-header">Date Range</div>
+    <div class="card-body">
+      <div class="grid2">
+        <div>
+          <label>Start Date</label>
+          <input type="date" id="startDate">
+        </div>
+        <div>
+          <label>End Date</label>
+          <input type="date" id="endDate">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Planets -->
+  <div class="card">
+    <div class="card-header">Planets & Bodies</div>
+    <div class="card-body">
+      <div class="planet-grid" id="planetGrid"></div>
+      <div class="toggle-row section-sep">
+        <label class="toggle"><input type="checkbox" id="helioToggle"><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+        <span class="toggle-label">Heliocentric (default: Geocentric)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aspects -->
+  <div class="card">
+    <div class="card-header">Aspects & Orbs</div>
+    <div class="card-body">
+      <div class="aspect-grid" id="aspectGrid"></div>
+    </div>
+  </div>
+
+  <!-- Natal -->
+  <div class="card">
+    <div class="card-header">Natal / Reference Chart <span class="info-badge">Optional</span></div>
+    <div class="card-body">
+      <div class="toggle-row">
+        <label class="toggle"><input type="checkbox" id="natalToggle" onchange="toggleNatal()"><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+        <span class="toggle-label">Include natal chart aspects</span>
+      </div>
+      <div id="natalSection" style="display:none; margin-top:0.8rem;">
+        <div class="grid2">
+          <div>
+            <label>Birth Date</label>
+            <input type="date" id="natalDate">
+          </div>
+          <div>
+            <label>Birth Time (UT)</label>
+            <input type="time" id="natalTime" value="12:00">
+          </div>
+        </div>
+        <div class="grid3" style="margin-top:0.6rem;">
+          <div>
+            <label>Lat (°)</label>
+            <input type="number" id="natalLat" value="51.5" step="0.1">
+          </div>
+          <div>
+            <label>Lon (°)</label>
+            <input type="number" id="natalLon" value="0.0" step="0.1">
+          </div>
+          <div>
+            <label>Orb (°)</label>
+            <input type="number" id="natalOrb" value="2" min="0" max="10" step="0.5">
+          </div>
+        </div>
+        <div style="margin-top:0.6rem;">
+          <label>Natal Planets</label>
+          <div class="planet-grid" id="natalPlanetGrid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 2: Ingresses -->
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Sign Ingresses</span>
+      <label class="toggle" style="margin:0"><input type="checkbox" id="ingressToggle"><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+    </div>
+    <div class="card-body">
+      <p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:.6rem">Bodies entering a new sign. Retrograde re-entries tracked separately. Independent body list.</p>
+      <label>Bodies for Ingress</label>
+      <div class="planet-grid" id="ingressPlanetGrid"></div>
+    </div>
+  </div>
+
+  <!-- MODULE 3: Lunar Phases & Eclipses -->
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Lunar Phases &amp; Eclipses</span>
+      <label class="toggle" style="margin:0"><input type="checkbox" id="lunarToggle"><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+    </div>
+    <div class="card-body">
+      <p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:.6rem">New &amp; Full Moons with exact degree. Eclipses detected via lunar node proximity.</p>
+      <div class="grid2">
+        <div>
+          <div class="toggle-row" style="margin-top:0"><label class="toggle"><input type="checkbox" id="lunarNew" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label><span class="toggle-label">🌑 New Moons</span></div>
+          <div class="toggle-row"><label class="toggle"><input type="checkbox" id="lunarFull" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label><span class="toggle-label">🌕 Full Moons</span></div>
+        </div>
+        <div>
+          <div class="toggle-row" style="margin-top:0"><label class="toggle"><input type="checkbox" id="lunarSolarEcl" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label><span class="toggle-label">🌑 Solar Eclipses</span></div>
+          <div class="toggle-row"><label class="toggle"><input type="checkbox" id="lunarLunarEcl" checked><span class="toggle-track"></span><span class="toggle-thumb"></span></label><span class="toggle-label">🌕 Lunar Eclipses</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="run-btn" id="runBtn" onclick="runAspectarian()">⊕ Calculate</button>
+
+  <!-- Results -->
+  <div class="card" id="resultsCard" style="display:none; margin-top:1.5rem;">
+    <div class="results-header">
+      <span class="results-title">Aspectarian Results</span>
+      <span style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">
+        <span class="results-count" id="resultsCount"></span>
+        <label class="deg-toggle-wrap" title="Toggle decimal degrees vs sign/degree display">
+          <input type="checkbox" id="degViewToggle" onchange="onDegViewChange()">
+          <span class="deg-toggle-track"></span>
+          <span class="deg-toggle-label">Dec°</span>
+        </label>
+        <button class="export-btn" onclick="exportCSV()" title="Download CSV">↓CSV</button>
+        <button class="export-btn" onclick="toggleTextPreview()" id="txtPreviewBtn" title="Text preview">≡TXT</button>
+      </span>
+    </div>
+    <!-- View mode toggle: General / Natal -->
+    <div class="view-mode-bar" id="viewModeBar" style="display:none;">
+      <button class="vmode-btn active" id="vmodeGeneral" onclick="setViewMode('general')">Aspects</button>
+      <button class="vmode-btn" id="vmodeNatal" onclick="setViewMode('natal')" style="display:none">Natal</button>
+      <button class="vmode-btn" id="vmodeIngress" onclick="setViewMode('ingress')" style="display:none">Ingresses</button>
+      <button class="vmode-btn" id="vmodeLunar" onclick="setViewMode('lunar')" style="display:none">Lunar</button>
+      <button class="vmode-btn" id="vmodeEclipse" onclick="setViewMode('eclipse')" style="display:none">Eclipses</button>
+    </div>
+    <div class="filter-bar" id="filterBar"></div>
+    <div id="resultsList" class="aspect-list"></div>
+    <!-- Text preview panel -->
+    <div id="textPreviewPanel" style="display:none;">
+      <div class="txt-preview-header">
+        <span style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.15em;color:var(--gold);">TEXT PREVIEW</span>
+        <div style="display:flex;gap:0.4rem;">
+          <button class="export-btn" onclick="copyTextPreview()">Copy</button>
+          <button class="export-btn" onclick="downloadText()">↓TXT</button>
+          <button class="export-btn" onclick="toggleTextPreview()">✕</button>
+        </div>
+      </div>
+      <textarea id="textPreviewArea" readonly></textarea>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// Astronomical constants & planet data
+// ============================================================
+const DEG = Math.PI / 180;
+const RAD = 180 / Math.PI;
+
+const PLANETS_CONFIG = [
+  { id: 'sun',      sym: '☉', name: 'Sun',       col: '#FFD700', default: true  },
+  { id: 'moon',     sym: '☽', name: 'Moon',       col: '#C0C0C0', default: true  },
+  { id: 'mercury',  sym: '☿', name: 'Mercury',    col: '#98FB98', default: true  },
+  { id: 'venus',    sym: '♀', name: 'Venus',      col: '#FFB6C1', default: true  },
+  { id: 'mars',     sym: '♂', name: 'Mars',       col: '#FF6B6B', default: true  },
+  { id: 'jupiter',  sym: '♃', name: 'Jupiter',    col: '#FFA500', default: true  },
+  { id: 'saturn',   sym: '♄', name: 'Saturn',     col: '#D2B48C', default: true  },
+  { id: 'uranus',   sym: '⛢', name: 'Uranus',     col: '#7FFFD4', default: false },
+  { id: 'neptune',  sym: '♆', name: 'Neptune',    col: '#6495ED', default: false },
+  { id: 'pluto',    sym: '♇', name: 'Pluto',      col: '#DDA0DD', default: false },
+  { id: 'tnode',    sym: '☊', name: 'True Node',  col: '#E8C87A', default: false },
+  { id: 'mnode',    sym: '☋', name: 'Mean Node',  col: '#C8A860', default: false },
+];
+
+const ASPECTS_CONFIG = [
+  // id, name, abbrev (safe ASCII for export), angle (degrees), orb, symbol, css class
+  { id: 'conjunction',    name: 'Conjunction',       abbr: 'Cnj',  angle: 0,    orb: 8,   sym: '☌',  cls: 'conjunction'    },
+  { id: 'opposition',     name: 'Opposition',        abbr: 'Opp',  angle: 180,  orb: 8,   sym: '☍',  cls: 'opposition'     },
+  { id: 'trine',          name: 'Trine',             abbr: 'Tri',  angle: 120,  orb: 6,   sym: '△',  cls: 'trine'          },
+  { id: 'square',         name: 'Square',            abbr: 'Sqr',  angle: 90,   orb: 6,   sym: '□',  cls: 'square'         },
+  { id: 'sextile',        name: 'Sextile',           abbr: 'Sxt',  angle: 60,   orb: 5,   sym: '⚹',  cls: 'sextile'        },
+  { id: 'quincunx',       name: 'Quincunx (150°)',   abbr: 'Qnx',  angle: 150,  orb: 3,   sym: '⚻',  cls: 'quincunx'       },
+  { id: 'semisquare',     name: 'Semi-square (45°)', abbr: 'SSq',  angle: 45,   orb: 2,   sym: '∠',  cls: 'semisquare'     },
+  { id: 'sesquiquadrate', name: 'Sesquiquadrate (135°)', abbr: 'SsQ', angle: 135, orb: 2, sym: '⊼',  cls: 'sesquiquadrate' },
+  { id: 'semisextile',    name: 'Semi-sextile (30°)', abbr: 'SSx', angle: 30,   orb: 1.5, sym: '⚺',  cls: 'semisextile'    },
+  { id: 'quintile',       name: 'Quintile (72°)',    abbr: 'Qnt',  angle: 72,   orb: 1.5, sym: 'Q',  cls: 'quintile'       },
+  { id: 'biquintile',     name: 'Bi-quintile (144°)', abbr: 'BQn', angle: 144,  orb: 1.5, sym: 'bQ', cls: 'biquintile'     },
+  { id: 'tredecile',      name: 'Tredecile (108°)',  abbr: 'Tdc',  angle: 108,  orb: 1.5, sym: '3D', cls: 'quintile'       },
+  { id: 'novile',         name: 'Novile (40°)',      abbr: 'Nov',  angle: 40,   orb: 1,   sym: 'N',  cls: 'sextile'        },
+  { id: 'binovile',       name: 'Bi-novile (80°)',   abbr: 'bNv',  angle: 80,   orb: 1,   sym: 'bN', cls: 'sextile'        },
+  { id: 'quadranovile',   name: 'Quadra-novile (160°)', abbr: 'QNv', angle: 160, orb: 1,  sym: 'qN', cls: 'sextile'        },
+  { id: 'decile',         name: 'Decile (36°)',      abbr: 'Dcl',  angle: 36,   orb: 1,   sym: 'D',  cls: 'semisextile'    },
+  { id: 'quindecile',     name: 'Quindecile (165°)', abbr: 'Qdl',  angle: 165,  orb: 1.5, sym: 'qd', cls: 'quincunx'       },
+  { id: 'vigintile',      name: 'Vigintile (18°)',   abbr: 'Vgt',  angle: 18,   orb: 1,   sym: 'V',  cls: 'semisextile'    },
+  { id: 'parallel',       name: 'Parallel Decl',     abbr: 'Par',  angle: -1,   orb: 1,   sym: '∥',  cls: 'conjunction'    },
+  { id: 'contraparallel', name: 'Contra-parallel',   abbr: 'CPr',  angle: -2,   orb: 1,   sym: '⊬',  cls: 'opposition'     },
+];
+
+
+// ═══════════════════════════════════════════════════════════════
+// VSOP87 ENGINE — Bretagnon & Francou 1988 / Meeus AA2
+// Valid 1500–3800 AD. Accuracy < 1" outer planets modern dates,
+// < 10" at range extremes. Moon: ELP-2000/82 truncated.
+// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// VSOP87 TRUNCATED COEFFICIENT TABLES
+// Source: Bretagnon & Francou (1988), Meeus "Astronomical Algorithms" 2nd ed.
+// Valid: 1500-3800 AD, accuracy < 1" for inner planets, < 5" for outer planets
+// Format: [A, B, C] where term contribution = A * cos(B + C*tau)
+// tau = Julian millennia from J2000.0 = (JDE - 2451545.0) / 365250.0
+// Final: L(rad) = sum(L_n * tau^n) / 1e8, then degrees, mod 360
+// ═══════════════════════════════════════════════════════════════
+
+const VSOP87 = {
+
+// ─── EARTH (gives Sun geocentric longitude as L+180) ────────────────────────
+earth: {
+L:[
+[[175347046,0,0],[3341656,4.6692568,6283.0758500],[34894,4.62610,12566.15170],[3497,2.7441,5753.3849],[3418,2.8289,3.5231],[3136,3.6277,77713.7715],[2676,4.4181,7860.4194],[2343,6.1352,3930.2097],[1324,0.7425,11506.7698],[1273,2.0371,529.6910],[1199,1.1096,1577.3435],[990,5.233,5884.927],[902,2.045,26.298],[857,3.508,398.149],[780,1.179,5223.694],[753,2.533,5507.553],[505,4.583,18849.228],[492,4.205,775.523],[357,2.920,0.067],[317,5.849,11790.629],[284,1.899,796.298],[271,0.315,10977.079],[243,0.345,5486.778],[206,4.806,2544.314],[205,1.869,5573.143],[202,2.458,6069.777],[156,0.833,213.299],[132,3.411,2942.463],[126,1.083,20.775],[115,0.645,0.980],[103,0.636,4694.003],[99,6.21,15720.84],[98,0.68,7084.90],[86,5.98,11243.69],[72,1.14,529.69],[68,1.87,398.15],[63,1.05,20.78],[57,3.44,796.30],[56,4.39,10447.39],[49,0.48,5486.78],[45,5.20,10213.29],[43,1.02,1059.38],[39,4.12,10447.39],[38,2.57,5643.18],[37,1.08,2146.17],[37,1.68,5088.63],[36,4.51,3154.69],[35,4.51,5765.85],[33,0.59,7058.60],[32,0.99,6275.96],[31,2.43,161000.69],[28,1.21,5088.63],[27,4.26,2352.87],[27,4.44,9437.76],[25,0.45,4690.48]],
+[[628331966747,0,0],[206059,2.678235,6283.075850],[4303,2.6351,12566.1517],[425,1.590,3.523],[119,5.796,26.298],[109,2.966,1577.344],[93,2.59,18849.23],[72,1.14,529.69],[68,1.87,398.15],[67,4.41,5507.55],[59,2.89,5223.69],[56,2.17,155.42],[45,0.40,796.30],[36,0.47,775.52],[29,2.65,7.11],[21,5.34,0.98],[19,1.85,5486.78],[19,4.97,213.30],[17,2.99,6275.96],[16,0.03,2544.31],[16,1.43,2146.17],[15,1.21,10977.08],[12,2.83,1748.02],[12,3.26,5088.63],[12,5.27,1194.45],[12,2.08,4694.00],[11,0.77,553.57],[10,1.30,6286.60],[10,4.24,1349.87],[9,2.70,242.73],[9,5.64,951.72],[8,5.30,2352.87],[6,2.65,9437.76],[6,4.67,4690.48]],
+[[52919,0,0],[8720,1.0721,6283.0758],[309,0.867,12566.152],[27,0.05,3.52],[16,5.19,26.30],[16,3.68,155.42],[10,0.76,18849.23],[9,2.06,77713.77],[7,0.83,775.52],[5,4.66,1577.34],[4,1.03,7.11],[4,3.44,5573.14],[3,5.14,796.30],[3,6.05,5507.55],[3,1.19,242.73],[3,6.12,529.69],[3,0.31,398.15],[3,2.28,553.57],[2,4.38,5223.69],[2,3.75,0.98]],
+[[289,5.844,6283.076],[35,0,0],[17,5.49,12566.15],[3,5.20,155.42],[1,4.72,3.52],[1,5.30,18849.23],[1,5.97,242.73]],
+[[114,3.142,0],[8,4.13,6283.08],[1,3.84,12566.15]],
+[[1,3.14,0]]],
+B:[[[280,3.199,84334.662],[102,5.422,5507.553],[80,3.88,5223.69],[44,3.70,2352.87],[32,4.00,1577.34]],[[9,3.90,5507.55],[6,1.73,5223.69]],[[0,0,0]],[[0,0,0]],[[0,0,0]],[[0,0,0]]],
+R:[[[100013989,0,0],[1670700,3.0984635,6283.0758500],[13956,3.05525,12566.15170],[3084,5.1985,77713.7715],[1628,1.1739,5753.3849],[1576,2.8469,7860.4194],[925,5.453,11506.770],[542,4.564,3930.210],[472,3.661,5884.927],[346,0.964,5507.553],[329,5.900,5223.694],[307,0.299,5573.143],[243,4.273,11790.629],[212,5.847,1577.344],[186,5.022,10977.079],[175,3.012,18849.228],[110,5.055,5486.778],[98,0.89,6069.78],[86,5.69,15720.84],[86,1.27,161000.69],[65,1.43,17789.85],[63,1.05,5088.63],[57,3.44,796.30],[56,4.39,10447.39],[49,0.48,5486.78],[45,5.20,10213.29],[43,1.02,1059.38],[39,4.12,10447.39],[38,2.57,5643.18],[37,1.08,2146.17],[37,1.68,5088.63],[36,4.51,3154.69],[35,4.51,5765.85],[33,0.59,7058.60],[32,0.99,6275.96]],
+[[103019,1.107490,6283.075850],[1721,1.0644,12566.1517],[702,3.142,0],[32,1.02,18849.23],[31,2.84,5507.55],[25,1.32,5223.69],[18,1.42,1577.34],[10,5.91,10977.08],[9,1.42,6275.96],[9,0.27,5486.78]],
+[[4359,5.7846,6283.0758],[124,5.579,12566.152],[12,3.142,0],[9,3.63,77713.77],[6,1.87,5573.14],[3,5.47,18849.23]],
+[[145,4.273,6283.076],[7,3.92,12566.15]],
+[[4,2.56,6283.08]],
+[[0,0,0]]]
+},
+
+// ─── MERCURY ────────────────────────────────────────────────────────────────
+mercury: {
+L:[
+[[440250710,0,0],[40989415,1.48302034,26087.9031416],[5046294,4.4778549,52175.8062831],[855347,1.165203,78263.709425],[165590,4.119692,104351.612566],[34562,0.77931,130439.51571],[7583,3.7135,156527.4188],[3560,1.5120,1109.3786],[1803,4.1033,5661.3320],[1726,0.3583,182615.3220],[1590,2.9951,25028.5212],[1365,4.5992,27197.2817],[1017,0.8803,31441.6776],[714,1.541,24978.525],[644,5.303,21535.950],[451,6.050,51116.424],[404,3.282,208703.225],[352,5.242,20426.571],[345,2.792,15720.839],[343,5.765,955.600],[339,5.863,25558.212],[325,1.337,53285.185],[273,2.495,529.691],[264,3.917,57837.138],[260,0.987,4551.953],[239,0.113,1059.382],[235,0.267,11243.685],[217,0.660,13521.751],[209,2.092,47623.853],[183,2.629,27043.503],[183,6.107,25661.305],[175,1.467,51066.428],[167,2.651,3154.690],[166,2.212,16730.464],[162,0.590,3340.612],[149,5.736,1194.447],[148,3.430,796.298],[141,3.356,10239.584],[131,4.423,5017.510],[132,4.512,6283.076],[128,4.188,2942.463]],
+[[2608814706223,0,0],[1126008,6.2170397,26087.9031416],[303471,3.055655,52175.8062831],[80538,6.10455,78263.70942],[21245,2.83532,104351.61257],[5592,4.1985,130439.5157],[1472,2.5186,156527.4188],[388,4.744,182615.322],[352,3.052,1109.379],[138,0.293,24978.525],[131,2.782,25028.521],[20,1.59,208703.22]],
+[[53050,0,0],[16904,4.69072,26087.90314],[7397,1.34709,52175.80628],[3018,4.4564,78263.7094],[1107,1.2623,104351.6126],[378,4.320,130439.516],[123,1.069,156527.419],[39,4.08,182615.32],[15,4.63,1109.38],[12,0.79,24978.52]],
+[[188,0.035,52175.806],[142,3.125,0],[97,3.00,26087.90],[44,6.02,78263.71],[35,0,0],[18,2.78,104351.61]],
+[[114,3.1416,0],[3,5.21,26087.90]],
+[[1,3.14,0]]],
+B:[[[11737529,1.98357499,26087.9031416],[2388076,5.0373896,52175.8062831],[1222840,3.1415927,0],[543252,1.796444,78263.709425],[129779,4.832325,104351.612566],[31867,1.58088,130439.51571],[7963,4.6061,156527.4188],[2014,4.5765,182615.3220],[516,4.843,208703.225],[128,4.025,234791.128]],
+[[429151,3.501698,26087.9031416],[146234,3.141593,0],[22675,0.01515,52175.8062831],[10895,0.48540,78263.70942],[6117,4.0227,104351.61257],[1109,2.0781,130439.5157]],
+[[11831,4.79066,26087.9031416],[1914,0.0000,0],[1045,3.0521,52175.8063],[266,2.985,78263.709]],
+[[235,0.354,26087.903]],
+[[0,0,0]],[[0,0,0]]],
+R:[[[39528272,0,0],[7834132,6.1923372,26087.9031416],[795526,2.959897,52175.806283],[121491,6.010693,78263.709425],[21921,5.447651,104351.612566],[4354,3.3285,130439.5157],[918,6.116,156527.419],[290,3.776,182615.322],[97,4.365,208703.225],[34,3.35,234791.13]],
+[[217347,4.656855,26087.9031416],[44142,1.42386,52175.8063],[10094,4.47466,78263.7094],[2433,6.1048,104351.6126],[1624,0.0000,0],[604,3.9540,130439.516],[201,3.054,156527.419],[67,3.72,182615.32]],
+[[3118,3.0823,26087.903],[1245,6.1518,52175.806],[425,2.926,78263.709],[136,5.980,104351.613],[42,2.759,130439.516]],
+[[192,3.138,26087.903],[32,0,0],[10,5.84,52175.81]],
+[[0,0,0]],[[0,0,0]]]
+},
+
+// ─── VENUS ─────────────────────────────────────────────────────────────────
+venus: {
+L:[
+[[317614667,0,0],[1353968,5.5931332,10213.2855462],[89892,5.30650,20426.57109],[5477,4.4163,7860.4194],[3456,2.6996,11790.6291],[2372,2.9938,3930.2097],[1664,4.2502,1577.3435],[1438,4.1575,9153.9038],[1317,5.1867,26.2983],[1201,6.1536,30213.3316],[761,1.950,529.691],[708,1.065,775.523],[585,3.998,191.448],[500,4.123,15720.839],[429,3.586,19367.189],[327,5.677,5507.553],[326,4.591,10404.734],[232,3.163,9437.763],[180,4.653,10239.584],[155,5.570,19651.048],[128,4.226,20.775],[128,0.962,5661.332],[106,1.537,801.821],[101,5.819,11243.685],[93,1.302,9153.904],[84,2.816,5507.553],[79,3.654,9999.986],[74,4.510,775.523],[51,3.14,0]],
+[[1021352943052,0,0],[95708,2.46424,10213.28555],[14445,0.51625,20426.57109],[213,1.795,30639.857],[174,2.655,26.298],[152,6.106,1577.344],[82,5.70,191.45],[70,2.68,9153.90],[52,3.60,15720.84],[38,1.03,9437.76],[30,1.25,19651.05],[25,6.11,10404.73]],
+[[54127,0,0],[3891,0.3451,10213.2855],[1338,2.0201,20426.5711],[24,2.05,26.30],[19,3.54,30639.86],[10,3.97,775.52],[7,1.52,1577.34],[6,1.00,191.45]],
+[[136,4.804,10213.286],[78,3.67,20426.57],[26,0,0],[2,3.67,19651.05]],
+[[114,3.1416,0],[3,5.21,20426.57],[2,2.51,10213.29]],
+[[0,0,0]]],
+B:[[[5923638,0.2670278,10213.2855462],[40108,1.14737,20426.57109],[32815,3.14737,0],[1011,1.0895,30639.857],[149,6.254,18073.705],[138,0.860,1577.344],[130,3.672,9153.904],[120,3.705,2352.866],[108,4.539,22003.915]],
+[[513348,1.803643,10213.285546],[4380,3.3862,20426.5711],[199,0,0],[197,2.530,30639.857]],
+[[22378,3.38509,10213.28555],[282,0,0],[173,5.256,20426.571],[27,3.87,30639.86]],
+[[647,4.992,10213.286],[20,3.14,0]],
+[[0,0,0]],[[0,0,0]]],
+R:[[[72334821,0,0],[489824,4.021518,10213.285546],[1658,4.9021,20426.5711],[1632,2.8455,7860.4194],[1378,1.1285,11790.6291],[498,2.587,9153.904],[374,1.423,3930.210],[264,5.529,9437.763],[237,2.551,15720.839],[222,2.013,19367.189],[126,2.728,1109.379],[119,3.020,10404.734]],
+[[34551,0.89199,10213.28555],[234,1.772,20426.571],[234,3.142,0]],
+[[1407,5.0637,10213.2855],[16,5.47,20426.57],[13,0,0]],
+[[50,3.22,10213.29]],
+[[0,0,0]],[[0,0,0]]]
+},
+
+// ─── MARS ───────────────────────────────────────────────────────────────────
+mars: {
+L:[
+[[620347712,0,0],[18656368,5.0503417,3340.6124267],[1108217,5.4009984,6681.2248534],[91798,5.75479,10021.8372801],[27745,5.97050,2281.2304965],[12316,0.84956,2810.9214605],[10610,2.93959,2942.4634232],[8927,4.15718,0.01725],[8716,6.11005,13362.4497146],[7775,3.33995,5621.8429232],[6798,0.36510,398.1490034],[4161,0.22957,2942.463],[3575,1.66187,2281.230],[3497,0.65750,1059.3820],[3432,4.49875,3344.136],[3136,3.6277,77713.7715],[3175,4.07647,796.2980],[2945,3.88272,9492.1414],[2861,3.61677,5753.3849],[2627,0.64697,398.149],[2380,3.63338,5507.553],[2307,1.05981,191.448],[2298,3.64699,6151.534],[2099,3.03263,3337.089],[2053,4.36528,2544.314],[1874,2.41891,3340.600],[1797,1.02971,522.577],[1765,2.14384,1109.379],[1590,2.99438,9492.141],[1522,3.62605,3154.690],[1376,1.22170,3738.761],[1313,0.29456,13936.794],[1233,5.55040,29050.784],[1222,3.80168,5085.520],[1183,4.30847,17789.845],[1080,5.59590,796.298],[1027,1.15020,3340.595]],
+[[334085627474,0,0],[1458227,3.6042605,3340.6124267],[164901,3.926313,6681.2248534],[19963,4.26594,10021.8372801],[3452,4.7321,3.1814],[2485,4.6128,13362.4497],[842,4.459,2281.230],[529,5.674,3337.089],[432,2.443,1059.382],[393,5.070,3344.136],[339,6.141,3738.761],[294,0.540,2810.921],[273,3.843,2942.463],[276,2.476,3330.610],[262,3.014,3340.596],[248,0.863,5621.843],[218,0.820,2544.314],[222,0.617,5607.577]],
+[[58016,2.04979,3340.6124],[54188,0.00000,0],[13908,2.45742,6681.2249],[2465,2.8000,10021.837],[855,2.940,3337.089],[813,6.100,3344.136],[498,3.142,0],[296,3.784,2281.230],[261,5.518,1059.382],[234,3.266,13362.450],[168,2.318,3154.690],[116,3.211,3738.761]],
+[[1482,0.4443,3340.612],[662,0.885,6681.225],[188,1.288,10021.837],[41,1.65,13362.45],[26,0,0],[23,2.05,3337.09]],
+[[114,3.1416,0],[3,5.21,6681.22]],
+[[1,3.14,0]]],
+B:[[[3197135,3.7683204,3340.6124267],[298033,4.106170,6681.224853],[289105,0.0000,0],[31366,4.44651,10021.8373],[3484,4.7881,13362.450],[443,0.476,3337.089],[443,5.026,3344.136],[399,3.458,5621.843],[293,3.792,2281.230],[182,6.136,1059.382],[163,4.264,3738.761],[160,2.232,3340.595],[150,3.706,3340.629],[139,4.260,13696.634]],
+[[350069,5.368478,3340.6124267],[14116,3.1416,0],[9116,0.705,6681.224],[886,5.678,10021.837],[129,1.476,3337.089],[122,4.072,3344.136]],
+[[16727,0,0],[4987,3.1416,0],[785,5.468,3340.612],[2,4.08,0]],
+[[607,1.981,3340.612],[43,6.050,6681.225]],
+[[0,0,0]],[[0,0,0]]],
+R:[[[153033488,0,0],[14184953,3.47971284,3340.6124267],[660776,3.817834,6681.224853],[46179,4.15595,10021.8373],[8109,5.5596,2810.9215],[7485,1.7724,5621.8429],[5765,0.0000,0],[5765,1.5697,3340.612],[3575,1.6619,2281.230],[2985,3.7074,2942.463],[2962,4.5765,5085.520],[2434,4.2576,13362.450],[2261,2.7826,3154.690],[2228,0.5467,155.420],[2052,1.7900,3340.600],[1667,2.1468,3340.623],[1503,2.7801,9492.141],[1330,3.7670,9920.040],[1172,3.6486,3337.089],[1021,1.1963,3344.136]],
+[[1107433,2.0325052,3340.6124267],[103176,2.370718,6681.224853],[12877,0,0],[10816,2.70888,10021.8373],[2471,2.0023,5621.843],[706,0.495,2281.230],[613,1.058,3154.690],[500,3.999,13362.450],[399,2.888,3344.136],[310,1.337,2810.921],[236,0,0]],
+[[44242,0.47931,3340.612],[8138,0.86968,6681.225],[1275,1.2266,10021.837],[187,1.573,13362.450],[52,3.14,0],[41,1.97,3337.09]],
+[[3789,0.6014,3340.612],[523,0,0],[83,0.70,6681.22]],
+[[16,0,0]],[[0,0,0]]]
+},
+
+// ─── JUPITER ────────────────────────────────────────────────────────────────
+jupiter: {
+L:[
+[[59954691,0,0],[9695899,5.0619179,529.6909651],[573610,1.444062,7.113547],[306389,5.417347,1059.381930],[97178,4.14265,632.783739],[72903,3.64043,522.577418],[64264,3.41145,103.092774],[39806,2.29377,419.484643],[38858,1.27232,316.391870],[27965,1.78455,536.804512],[13590,5.77481,1589.072990],[8769,3.63004,949.175610],[8246,3.58230,206.185548],[7368,5.08101,735.876513],[6263,0.02497,213.299095],[6114,4.51319,1162.474740],[5305,4.18625,1052.268380],[5305,1.30669,14.227094],[4905,1.32084,110.206321],[4647,4.67169,3.523118],[3045,4.31688,426.598191],[2610,1.56667,846.082834],[2028,1.06374,3.181374],[1921,0.97168,639.897300],[1765,2.14153,1265.567478],[1723,3.88004,742.990060],[1633,3.58450,533.623185],[1432,4.29688,543.918019],[973,4.098,1581.959],[884,2.437,1162.475],[733,6.085,838.969],[731,3.806,742.990],[710,1.167,84.343],[692,6.264,529.691],[614,4.028,1052.268],[582,4.740,529.691],[495,3.756,625.670],[441,2.958,1898.352],[417,1.036,209.367],[390,4.897,3154.690],[376,4.703,1581.959],[341,5.715,1478.867],[288,5.502,625.670],[275,1.389,838.969],[258,3.601,2118.764],[257,3.615,742.990],[252,5.765,1692.166]],
+[[52993480757,0,0],[489741,4.220667,529.690965],[228919,6.026475,7.113547],[27655,4.57266,1059.381930],[20721,5.45939,522.577418],[12106,0.16986,536.804512],[6068,4.42241,103.092774],[5765,2.39001,419.484643],[5765,1.56967,316.391870],[4861,3.02202,7.113547],[4472,3.15570,213.299095],[4453,3.54980,419.484643],[3545,3.03402,1589.072990],[2626,2.12554,629.914192],[2107,4.94200,949.175610],[1869,4.42280,526.459087]],
+[[47234,4.32535,7.113547],[38966,0.00000,0],[30629,2.93656,529.690965],[3189,1.05550,522.577418],[2729,4.84559,536.804512],[2723,3.41414,1059.381930],[1721,4.18735,199.072001],[383,5.768,419.485],[378,0.760,7.114],[367,6.055,426.598],[337,3.786,1589.073],[308,0.694,206.186],[218,6.237,206.186]],
+[[6502,2.5986,7.113547],[1357,1.34635,529.690965],[471,2.4753,14.227094],[417,3.24495,536.804512],[401,0.34767,1059.381930],[19,4.97,632.78]],
+[[669,0.853,7.11355],[65,0.37,14.227],[37,3.89,536.805],[36,4.61,522.577]],
+[[114,3.1416,0],[3,5.21,536.80],[2,2.51,14.23]]],
+B:[[[2268616,3.5585261,529.6909651],[110090,0.0000000,0],[109972,3.908093,1059.381930],[8101,3.60510,522.577418],[6438,0.30628,536.804512],[6044,4.25874,1589.072990],[1107,2.98533,1162.474740],[944,1.67518,426.598191],[942,2.93569,1052.268380],[894,1.78490,7.113547],[836,5.51580,103.092774],[767,1.22999,316.391870],[684,4.93566,949.175610],[529,0.62210,10447.387839],[386,1.90395,206.185548],[365,1.45420,522.577418],[310,2.24997,14.227094]],
+[[177352,5.701665,529.690965],[3230,5.77938,1059.381930],[1923,0.00000,0],[1527,5.44255,536.804512],[1523,0.76512,522.577418],[1172,4.28327,103.092774],[733,6.08510,522.577418]],
+[[801,5.99190,529.6910],[39,0.00,0]],
+[[0,0,0]],[[0,0,0]],[[0,0,0]]],
+R:[[[520887429,0,0],[25209327,3.49108640,529.6909651],[610600,3.841154,1059.381930],[282029,2.574199,632.783739],[187647,2.075904,522.577418],[86793,0.71001,419.484643],[72063,0.21463,536.804512],[65517,5.97996,316.391870],[46472,2.56064,227.526189],[29134,1.67743,7.113547],[22795,1.36856,1589.072990],[19948,4.92448,1162.474740],[12042,4.40910,949.175610],[9977,3.64944,10447.387839],[9025,1.56849,1898.351168],[8015,2.53106,14.227094],[7148,2.96616,529.690965],[7019,3.84046,213.299095],[6127,2.76730,625.670192],[5720,2.57648,309.278327],[4421,1.62151,103.092774],[4397,4.03219,95.979113],[3350,2.93698,735.876513],[3034,1.74898,838.969305],[2949,4.22082,543.918019],[2383,3.43548,1052.268380]],
+[[1271802,2.64937510,529.690965],[61662,3.000760,1059.381930],[53444,3.897180,522.577418],[41390,0.000000,0],[31185,4.885920,536.804512],[11847,2.41330,419.484643],[9166,4.75979,7.113547],[3404,2.42188,103.092774],[3284,5.77744,522.577418],[2180,0.50650,14.227094]],
+[[16707,3.81600,529.69097],[4399,0.0000,0],[2512,1.66216,536.80451],[1737,6.1272,7.11355],[1111,0.7640,103.09277]],
+[[6240,0.00000,0],[302,1.3816,7.1135]],
+[[1215,3.1416,0]],
+[[0,0,0]]]
+},
+
+// ─── SATURN ─────────────────────────────────────────────────────────────────
+saturn: {
+L:[
+[[87401354,0,0],[11107660,3.9620509,213.2990954],[1414151,4.5858152,7.1135470],[398379,0.521120,206.185548],[350769,3.303299,426.598191],[206816,0.246584,103.092774],[79271,3.84007,220.412642],[23990,4.66977,110.206321],[16574,0.43719,419.484643],[15820,0.93809,632.783739],[15054,2.71670,639.897300],[14907,5.76903,316.391870],[14610,1.56519,3.523118],[13160,4.44891,14.227094],[13005,5.98119,11.045350],[10725,3.12940,202.253396],[6126,1.76329,277.316802],[5863,0.23365,529.690965],[5228,4.20781,3.181374],[5020,3.17799,433.711977],[4593,0.61969,199.072001],[4006,2.24479,63.735898],[3688,0.36790,419.484643],[3688,3.55940,7.113547],[3461,1.55972,7.113547],[3420,4.94550,110.206321],[3401,3.38230,3154.690305],[3376,3.69550,224.344795],[2885,1.38762,838.969305],[2881,0.17960,742.990060],[2739,0.40268,1368.660252],[2635,0.57630,422.667295],[2307,1.97879,117.319587],[2192,0.92879,647.010580],[1922,0.41374,853.196350],[1871,2.90326,210.977585],[1641,5.25225,1581.959097],[1581,4.37867,951.718406],[1575,2.71320,415.552176],[1489,2.38525,639.897300],[1456,5.99282,3.523118],[1420,4.02998,209.366722],[1340,4.36100,11.045350],[1264,3.12770,529.690965],[1218,3.17780,210.977585],[1196,5.11380,1178.729155],[1181,3.15170,956.289156],[1175,2.14228,209.366722]],
+[[21354295596,0,0],[1296855,1.8282054,213.2990954],[564348,2.885001,7.113547],[107679,2.277699,206.185548],[98323,1.080651,426.598191],[40255,2.04128,220.412642],[19942,1.27955,103.092774],[10512,2.74718,419.484643],[6939,0.40484,639.897300],[4803,2.44189,110.206321],[4056,2.92166,18.156497],[3768,3.63970,224.344795],[3384,2.43530,1265.567478],[3302,1.26255,202.253396],[3071,2.32747,213.299095],[1953,3.56392,639.897300],[1249,2.62798,529.690965],[922,1.957,647.011],[706,4.417,426.598],[650,6.174,11.045]],
+[[116441,2.16401,7.113547],[91921,0.07425,213.299095],[90592,1.41347,426.598191],[15837,2.79735,220.412642],[13872,2.77712,103.092774],[9081,1.25363,202.253396],[5765,0.00000,0],[5722,1.61484,7.113547],[5708,4.58990,426.598191],[3789,5.63381,206.185548],[3694,1.39116,14.227094],[2786,3.56620,7.113547],[2753,5.88600,209.366722],[2752,0.68350,111.430161]],
+[[16744,7.10400,7.113547],[4338,2.45200,213.299095],[1590,3.95200,206.185548],[1197,6.20400,1265.568],[620,4.600,206.186],[340,5.400,220.413]],
+[[1501,3.14159,0],[640,4.994,7.114],[45,5.04,14.23],[10,2.78,639.90]],
+[[0,0,0]]],
+B:[[[4330678,3.6028443,213.2990954],[240348,2.852385,426.598191],[84746,0.00000,0],[34116,0.57297,206.185548],[30863,3.48442,220.412642],[14734,2.11847,639.897300],[9917,5.79000,419.484643],[6994,4.73600,7.113547],[4808,5.43310,316.391870],[4788,4.96510,110.206321],[3432,2.73700,433.711977],[1506,6.01700,103.092774],[1060,5.63600,529.690965],[969,5.470,632.784],[942,1.420,853.196],[726,5.006,522.578],[583,2.246,1066.495],[560,2.885,425.000],[498,2.628,207.000],[426,3.408,415.552],[409,4.989,209.367]],
+[[397555,5.332900,213.299095],[49479,3.14159,0],[18572,6.09919,426.598191],[14801,2.30586,220.412642],[9644,1.69674,103.092774],[3757,1.25559,639.897300],[2717,5.59549,7.113547],[1455,0.88596,419.484643],[1291,4.06900,316.391870],[853,4.60300,110.206321],[677,2.61500,423.000],[522,4.23000,3.523]],
+[[20629,0.50482,213.299095],[6212,1.96890,426.598191],[1156,0.00000,0],[1004,4.30330,7.113547],[432,1.99100,639.897300],[309,5.81100,21.340642]],
+[[1290,0.00000,0],[600,3.14159,0],[197,4.13700,213.29910]],
+[[0,0,0]],[[0,0,0]]],
+R:[[[955758136,0,0],[52921382,2.39226220,213.2990954],[1873680,5.2354961,206.1855484],[1464664,1.6476305,426.5981909],[821891,5.935910,316.391870],[547507,5.015326,103.092774],[371684,2.271148,220.412642],[361778,3.139043,7.113547],[140618,5.704704,632.783739],[98293,4.022890,11.045350],[86350,4.51525,1581.959097],[72602,1.13594,529.690965],[59234,0.36036,956.289156],[55400,5.24225,951.718406],[43011,2.62034,419.484643],[39026,4.52500,626.000],[36819,5.08660,9492.141],[36272,0.98960,110.206321],[34580,1.39370,3.523118],[32401,5.23930,1059.381930],[20101,3.40960,1052.268380],[19689,5.41518,1456.797],[17891,0.69780,14.227094],[17348,5.61970,838.969305],[16416,5.89330,1655.800],[16285,0.74670,742.990060],[15037,1.14300,218.487],[14882,2.83530,224.344795],[14301,4.02120,647.010580],[13946,4.23500,435.000]],
+[[6182981,0.2584643,213.299095],[506578,0.711147,206.185548],[341394,5.796358,426.598191],[188491,0.472157,220.412642],[186262,3.141593,0],[143891,1.407580,7.113547],[49621,6.01744,103.092774],[20928,5.09246,639.897300],[19953,1.17560,419.484643],[18840,1.60820,110.206321],[13877,0.75886,199.072001],[12893,5.94330,14.227094],[5765,2.97300,529.690965],[5765,5.04200,3.523118]],
+[[436902,4.786717,7.113547],[128999,3.142000,0],[32803,5.305782,213.299095],[9476,1.67004,426.598191],[2961,6.139,220.413],[2476,3.141,0],[2451,2.680,103.093],[1968,5.066,14.227]],
+[[20315,3.02187,7.113547],[8924,3.14159,0],[6909,4.32108,213.299095],[4787,4.56160,220.412642],[2480,0.53064,426.598191]],
+[[1202,1.42823,7.113547],[708,1.162,213.300],[516,6.240,206.186]],
+[[0,0,0]]]
+},
+
+// ─── URANUS ──────────────────────────────────────────────────────────────────
+uranus: {
+L:[
+[[548129294,0,0],[9260408,0.8910642,74.7815986],[1504248,3.6271926,1.4844727],[365982,1.899253,73.297126],[272328,3.358237,149.563197],[70328,5.39254,63.735898],[68892,6.09292,76.266071],[61999,2.26952,2.960781],[61951,2.85099,11.045350],[26469,3.14152,71.812653],[25711,6.11380,454.909367],[21079,4.36059,148.078724],[17819,1.74437,36.648563],[14613,4.73732,3.932207],[11162,5.82893,224.344795],[10997,0.48865,138.517497],[9527,2.95516,35.164090],[7546,5.23626,109.945682],[4220,3.23, 70.849],[4052,2.27,151.048],[3490,5.48,146.594],[3355,1.06,4.453],[3144,4.75,454.909],[2924,4.75,9.561],[2922,5.35,138.517],[2862,5.15,415.552],[2773,0.98,724.985],[2744,1.02,209.367],[2617,3.32,2.448],[2568,5.85,38.133],[2451,6.30,1368.660],[2446,4.26,529.691],[2440,4.49,1155.361],[2284,5.77,4.193],[2232,0.14,207.000],[1831,6.18,422.667],[1608,1.18,221.376],[1580,3.38,111.430],[1565,3.62,14.977],[1542,6.03,214.000]],
+[[7502543122,0,0],[154458,5.242017,74.7815986],[24456,1.71256,1.484473],[9258,0.42360,56.620389],[8266,1.50458,36.648563],[7842,1.41984,148.078724],[3899,0.40450,73.297126],[2284,4.09360,149.563197],[1927,3.67, 35.164],[1347,4.55,162.466],[1248,2.20,526.510],[947,4.83,1.484],[859,3.56,115.397],[838,6.00,151.048],[790,1.38,223.594],[745,3.89,70.849]],
+[[53033,0,0],[2358,2.2601,74.7816],[769,4.526,1.484],[554,3.423,36.649],[290,5.048,148.079],[247,5.550,149.563],[73,5.97,13.745]],
+[[5765,0.00,0],[459,1.62,74.78],[23,4.33,1.48]],
+[[1,3.14,0]],[[0,0,0]]],
+B:[[[1346278,2.6187781,74.7815986],[62341,5.081066,148.078724],[61601,3.141593,0],[9964,1.61160,76.266071],[9926,0.57630,73.297126],[3259,1.2482,224.344795],[2972,2.2437,1.484473],[2010,6.0555,63.735898],[1522,0.5437,138.517497],[924,0.38,69.365],[761,0.38,71.813],[708,0.54,11.045],[453,3.86,150.330],[334,0.78,453.425],[334,4.22,109.946]],
+[[206366,4.123943,74.7815986],[8563,0.0000,0],[1726,4.4710,148.079],[1374,4.0980,73.2971],[605,0.0000,0]],
+[[9212,5.8004,74.7816],[557,0.0000,0],[286,5.09,148.08]],
+[[0,0,0]],[[0,0,0]],[[0,0,0]]],
+R:[[[1921278582,0,0],[4476706,3.396834,74.7815986],[436647,0.000000,0],[174783,3.958692,1.484473],[73372,3.225008,73.297126],[31914,4.84120,148.078724],[18754,4.62440,224.344795],[13244,3.14159,0],[8144,3.57552,36.648563],[7694,0.67620,1.021328],[6835,0.00000,0],[4277,0.18,149.563],[4219,0.16,73.297],[3897,2.99,11.045],[2838,3.89,138.517],[2773,1.44,63.736],[2753,5.03,56.620],[2652,0.79,71.813],[2624,2.06,35.164],[2516,1.78,529.691]],
+[[1479896,3.6715018,74.7815986],[71212,6.22474,149.563197],[68627,6.13411,73.297126],[24060,3.14159,0],[21468,2.60177,76.266071],[20857,5.24625,11.045350],[11877,0.00000,0],[6963,4.18,1.484],[4457,3.07,148.079],[4364,6.03,36.649],[3584,4.33,1.484],[3271,4.63,35.164]],
+[[22440,0.69953,74.7816],[4727,3.14159,0],[1682,2.8793,149.563],[900,2.208,73.297],[614,4.390,11.045]],
+[[1990,5.3280,74.7816],[294,0,0],[122,4.09,149.56]],
+[[0,0,0]],[[0,0,0]]]
+},
+
+// ─── NEPTUNE ─────────────────────────────────────────────────────────────────
+neptune: {
+L:[
+[[531188633,0,0],[1798476,2.9010127,38.1330356],[1019910,0.4858547,1.4844727],[124531,4.830081,36.648563],[42064,5.41055,2.960781],[37714,6.09222,175.166060],[33784,1.24875,76.266071],[16483,0.00008,491.557929],[9199,4.9375,39.617508],[8994,0.2746,175.166060],[5765,3.6292,39.617],[5765,4.6524,35.164],[4800,1.49074,491.558],[4292,5.54290,206.185548],[4005,2.55985,529.690965],[3985,0.49834,5.481454],[3760,3.17437,99.360886],[3757,4.22413,426.598191],[3713,6.04365,2.448310],[3640,2.73862,35.164090],[3533,4.25999,38.133],[3388,4.01699,1.484],[3173,1.09539,37.612],[2839,2.14718,109.945682],[2689,0.81610,98.899],[2479,0.64260,168.050],[2425,1.61980,384.328],[2280,4.12370,41.102],[2248,4.64390,4.029],[2196,4.86040,38.133],[2041,3.84760,40.580],[1955,2.01180,99.361],[1929,5.05060,175.166]],
+[[3837687717,0,0],[16604,4.86319,1.484473],[15807,2.27923,38.133576],[3637,1.0477,35.164],[3636,1.1499,175.1661],[3226,5.44399,39.617508],[2745,5.49077,175.166060],[2363,5.38745,98.8999],[2275,6.08210,491.557929],[1887,5.25090,84.344],[1860,4.74720,206.186],[1767,4.93630,36.649],[1765,2.84700,529.691],[1559,4.87810,99.361],[1356,5.09770,35.164],[1278,5.64250,40.580]],
+[[53893,0,0],[296885,1.855100,38.133576],[4426,1.036,35.164],[4391,0,0],[2555,2.0,98.9],[2395,2.90,175.166]],
+[[31248,0,0],[1952,2.80,38.134]],
+[[114,3.1416,0]],[[0,0,0]]],
+B:[[[3088623,1.4410437,38.1330356],[27780,5.910635,76.266071],[27624,0.000000,0],[15448,3.50877,39.617508],[15355,2.52124,36.648563],[3503,0.0000,0],[1749,0.0000,0],[1463,1.68140,175.166060],[1341,3.18, 2.448],[1250,1.04,37.611],[1013,0.00,0],[988,2.33,35.164]],
+[[227279,3.807230,38.133576],[1803,1.0000,0],[1433,3.1416,0],[582,3.1416,0]],
+[[9691,5.5712,38.1336],[90,0.00,0]],
+[[0,0,0]],[[0,0,0]],[[0,0,0]]],
+R:[[[3007013206,0,0],[27780,5.910635,76.266071],[27624,0.000000,0],[15448,3.508770,39.617508],[15355,2.521240,36.648563],[3503,0.00000,0],[1749,0.00000,0],[1463,1.68140,175.166060],[274799,3.988748,38.133576],[2544,0.7110,1.485],[874,3.138,38.134],[838,2.920,35.164],[756,4.517,76.266],[662,4.941,2.448],[644,1.629,39.618]],
+[[236339,0.704980,38.133576],[13220,3.32015,1.484473],[8622,6.2163,35.164090],[2702,1.8827,98.8999],[2155,2.094,175.166],[2153,5.1696,39.618],[1603,0,0],[1401,4.414,175.166],[1326,2.997,491.558],[1233,1.0,38.134]],
+[[4247,5.8991,38.1336],[218,0,0]],
+[[166,4.552,38.134]],
+[[0,0,0]],[[0,0,0]]]
+}
+
+}; // end VSOP87
+
+// ─── MOON (ELP-2000/82 truncated, Meeus Ch.47) ──────────────────────────────
+// Fundamental arguments (degrees/century):
+// L' = 218.3164591 + 481267.88134236*T  (mean longitude)
+// D  = 297.8502042 + 445267.1115168*T   (mean elongation)
+// M  = 357.5291092 + 35999.0502909*T    (Sun mean anomaly)
+// M' = 134.9634114 + 477198.8676313*T   (Moon mean anomaly)
+// F  = 93.2720993  + 483202.0175381*T   (Moon lat argument)
+// E  = 1 - 0.002516*T - 0.0000074*T^2  (eccentricity factor)
+// Longitude terms [D,M,M',F,A_l] (sum -> longitude in 1e-6 deg * E^|M|)
+const MOON_LNG = [
+ [0,0,1,0,6288774],[2,0,-1,0,1274027],[2,0,0,0,658314],[0,0,2,0,213618],
+ [0,1,0,0,-185116],[0,0,0,2,-114332],[2,0,-2,0,58793],[2,-1,-1,0,57066],
+ [2,0,1,0,53322],[2,-1,0,0,45758],[0,1,-1,0,-40923],[1,0,0,0,-34720],
+ [0,1,1,0,-30383],[2,0,0,-2,15327],[0,0,1,2,-12528],[0,0,1,-2,10980],
+ [4,0,-1,0,10675],[0,0,3,0,10034],[4,0,-2,0,8548],[2,1,-1,0,-7888],
+ [2,1,0,0,-6766],[1,0,-1,0,-5163],[1,1,0,0,4987],[2,-1,1,0,4036],
+ [2,0,2,0,3994],[4,0,0,0,3861],[2,0,-3,0,3665],[0,1,-2,0,-2689],
+ [2,0,-1,2,-2602],[2,-1,-2,0,2390],[1,0,1,0,-2348],[2,-2,0,0,2236],
+ [0,1,2,0,-2120],[0,2,0,0,-2069],[2,-2,-1,0,2048],[2,0,1,-2,-1773],
+ [2,0,0,2,-1595],[4,-1,-1,0,1215],[0,0,2,2,-1110],[3,0,-1,0,-892],
+ [2,1,1,0,-810],[4,-1,-2,0,759],[0,2,-1,0,-713],[2,2,-1,0,-700],
+ [2,1,-2,0,691],[2,-1,0,-2,596],[4,0,1,0,549],[0,0,4,0,537],
+ [4,-1,0,0,520],[1,0,-2,0,-487],[2,1,0,-2,-399],[0,0,2,-2,-381],
+ [1,1,1,0,351],[3,0,-2,0,-340],[4,0,-3,0,330],[2,-1,2,0,327],
+ [0,2,1,0,-323],[1,1,-1,0,299],[2,0,3,0,294],[2,0,-1,-2,0]
+];
+// Latitude terms [D,M,M',F,B_l]
+const MOON_LAT = [
+ [0,0,0,1,5128122],[0,0,1,1,280602],[0,0,1,-1,277693],[2,0,0,-1,173237],
+ [2,0,-1,1,55413],[2,0,-1,-1,46272],[2,0,0,1,32573],[0,0,2,1,17198],
+ [2,0,1,-1,9266],[0,0,2,-1,8822],[2,-1,0,-1,8216],[2,0,-2,-1,4324],
+ [2,0,1,1,4200],[2,1,0,-1,-3359],[2,-1,-1,1,2463],[2,-1,0,1,2211],
+ [2,-1,-1,-1,2065],[0,1,-1,-1,-1870],[4,0,-1,-1,1828],[0,1,0,1,-1794],
+ [0,0,0,3,-1749],[0,1,-1,1,-1565],[1,0,0,1,-1491],[0,1,1,1,-1475],
+ [0,1,1,-1,-1410],[0,1,0,-1,-1344],[1,0,0,-1,-1335],[0,0,3,1,1107],
+ [4,0,0,-1,1021],[4,0,-1,1,833],[0,0,1,-3,777],[4,0,-2,1,671],
+ [2,0,0,-3,607],[2,0,2,-1,596],[2,-1,1,-1,491],[2,0,-2,1,-451],
+ [0,0,3,-1,439],[2,0,2,1,422],[2,0,-3,-1,421],[2,1,-1,1,-366],
+ [2,1,0,1,-351],[4,0,0,1,331],[2,-1,1,1,315],[2,-2,0,-1,302],
+ [0,0,1,3,-283],[2,1,1,-1,-229],[1,1,0,-1,223],[1,1,0,1,223],
+ [0,1,-2,-1,-220],[2,1,-1,-1,-220],[1,0,1,1,-185],[2,-1,-2,1,181],
+ [0,1,2,1,-177],[4,0,-2,-1,176],[4,-1,-1,-1,166],[1,0,1,-1,-164],
+ [4,0,1,-1,132],[1,0,-1,-1,-119],[4,-1,0,-1,115],[2,-2,0,1,107]
+];
+const MOON_R=[[0,0,1,0,-20905355],[2,0,-1,0,-3699111],[2,0,0,0,-2955968],[0,0,2,0,-569925],
+ [0,1,0,0,48888],[0,0,0,2,-3149],[2,0,-2,0,246158],[2,-1,-1,0,-152138],
+ [2,0,1,0,-170733],[2,-1,0,0,-204586],[0,1,-1,0,-129620],[1,0,0,0,108743],
+ [0,1,1,0,104755],[2,0,0,-2,10321],[4,0,-1,0,79661],[0,0,3,0,-34782],
+ [4,0,-2,0,-23210],[2,1,-1,0,-21636],[2,1,0,0,24208],[1,0,-1,0,30824],
+ [1,1,0,0,-8379],[2,-1,1,0,-16675],[2,0,2,0,-12831],[4,0,0,0,-10445],
+ [2,0,-3,0,-11650],[0,1,-2,0,14403]];
+
+
+
+// ── Core VSOP87 evaluation ──────────────────────────────────────
+const _PI=Math.PI, _D2R=_PI/180, _R2D=180/_PI;
+function _vs(terms,tau){return terms.reduce((s,[A,B,C])=>s+A*Math.cos(B+C*tau),0);}
+function _vL(Ls,tau){let t=0;for(let i=0;i<Ls.length;i++)t+=_vs(Ls[i],tau)*Math.pow(tau,i);return(t/1e8*_R2D%360+360)%360;}
+function _vB(Bs,tau){let t=0;for(let i=0;i<Bs.length;i++)t+=_vs(Bs[i],tau)*Math.pow(tau,i);return t/1e8;}
+function _vR(Rs,tau){let t=0;for(let i=0;i<Rs.length;i++)t+=_vs(Rs[i],tau)*Math.pow(tau,i);return t/1e8;}
+function _xyz(L_deg,B_rad,R){return[R*Math.cos(B_rad)*Math.cos(L_deg*_D2R),R*Math.cos(B_rad)*Math.sin(L_deg*_D2R),R*Math.sin(B_rad)];}
+
+// ── JDE / Julian centuries / millennia ──────────────────────────
+function jde(date){return date.getTime()/86400000+2440587.5;}
+function jcent(jd){return(jd-2451545)/36525;}    // Julian centuries (for Moon, nodes)
+function jtau(jd) {return(jd-2451545)/365250;}   // Julian millennia (for VSOP87)
+function norm360(a){return((a%360)+360)%360;}
+
+// ── Geocentric ecliptic longitude from VSOP87 ───────────────────
+function _geoFromVSOP(planet, tau) {
+  const pL=_vL(planet.L,tau), pB=_vB(planet.B,tau), pR=_vR(planet.R,tau);
+  const [px,py,pz]=_xyz(pL,pB,pR);
+  const eL=_vL(VSOP87.earth.L,tau), eB=_vB(VSOP87.earth.B,tau), eR=_vR(VSOP87.earth.R,tau);
+  const [ex,ey,ez]=_xyz(eL,eB,eR);
+  const dx=px-ex, dy=py-ey, dz=pz-ez;
+  return {
+    lon: norm360(Math.atan2(dy,dx)*_R2D),
+    lat: Math.atan2(dz,Math.sqrt(dx*dx+dy*dy))*_R2D,
+    dist: Math.sqrt(dx*dx+dy*dy+dz*dz)
+  };
+}
+
+// ── Sun ──────────────────────────────────────────────────────────
+function _sunPos(tau) {
+  const eL=_vL(VSOP87.earth.L,tau), eB=_vB(VSOP87.earth.B,tau), eR=_vR(VSOP87.earth.R,tau);
+  const [ex,ey,ez]=_xyz(eL,eB,eR);
+  return {lon:norm360(Math.atan2(-ey,-ex)*_R2D), lat:Math.atan2(-ez,Math.sqrt(ex*ex+ey*ey))*_R2D, dist:eR};
+}
+
+// ── Moon (ELP-2000/82 truncated, Meeus Ch.47) ────────────────────
+function _moonPos(T) {  // T = Julian centuries
+  const L_=norm360(218.3164591+481267.88134236*T-0.0013268*T*T+T*T*T/538841-T*T*T*T/65194000);
+  const D =norm360(297.8502042+445267.1115168*T -0.0016300*T*T+T*T*T/545868 -T*T*T*T/113065000);
+  const M =norm360(357.5291092+35999.0502909 *T -0.0001536*T*T+T*T*T/24490000);
+  const Mp=norm360(134.9634114+477198.8676313*T +0.0089970*T*T+T*T*T/69699  -T*T*T*T/14712000);
+  const F =norm360(93.2720993 +483202.0175381*T -0.0034029*T*T-T*T*T/3526000+T*T*T*T/863310000);
+  const E =1-0.002516*T-0.0000074*T*T;
+  const A1=norm360(119.75+131.849*T), A2=norm360(53.09+479264.290*T), A3=norm360(313.45+481266.484*T);
+  let sL=0,sB=0,sR=0;
+  const ef=m=>Math.abs(m)===1?E:Math.abs(m)===2?E*E:1;
+  for(const [Dv,Mv,Mpv,Fv,Al] of MOON_LNG){const a=(Dv*D+Mv*M+Mpv*Mp+Fv*F)*_D2R;sL+=Al*ef(Mv)*Math.sin(a);}
+  for(const [Dv,Mv,Mpv,Fv,Bl] of MOON_LAT){const a=(Dv*D+Mv*M+Mpv*Mp+Fv*F)*_D2R;sB+=Bl*ef(Mv)*Math.sin(a);}
+  for(const [Dv,Mv,Mpv,Fv,Rl] of MOON_R){const a=(Dv*D+Mv*M+Mpv*Mp+Fv*F)*_D2R;sR+=Rl*ef(Mv)*Math.cos(a);}
+  sL+=3958*Math.sin(A1*_D2R)+1962*Math.sin((L_-F)*_D2R)+318*Math.sin(A2*_D2R);
+  sB+=-2235*Math.sin(L_*_D2R)+382*Math.sin(A3*_D2R)+175*Math.sin((A1-F)*_D2R)+175*Math.sin((A1+F)*_D2R)+127*Math.sin((L_-Mp)*_D2R)-115*Math.sin((L_+Mp)*_D2R);
+  return {lon:norm360(L_+sL/1e6), lat:sB/1e6, dist:385000.56+sR/1000};
+}
+
+// ── Lunar nodes ──────────────────────────────────────────────────
+function _meanNodePos(T){
+  return {lon:norm360(125.04452-1934.136261*T+0.0020708*T*T+T*T*T/450000), lat:0};
+}
+function _trueNodePos(T){
+  const Om=norm360(125.04452-1934.136261*T+0.0020708*T*T);
+  const D =norm360(297.8501921+445267.1114034*T)*_D2R;
+  const Mv=norm360(357.5291092+35999.0502909 *T)*_D2R;
+  const Mp=norm360(134.9633964+477198.8675055*T)*_D2R;
+  const F =norm360(93.2720950 +483202.0175233*T)*_D2R;
+  return {lon:norm360(Om-1.4979*Math.sin(2*(D-F))-0.1500*Math.sin(Mv)-1.226*Math.sin(2*D)+0.1176*Math.sin(2*F)-0.0801*Math.sin(2*(Mp-F))), lat:0};
+}
+
+// ── Pluto (Meeus Ch.37 — approximation valid 1885–2099) ──────────
+function _plutoPos(T) {
+  const J=(34.35+3034.9057*T)*_D2R;
+  const S=(50.08+1222.1138*T)*_D2R;
+  const P=(238.96+144.9600*T)*_D2R;
+  const terms=[
+    [[-19799805,19850055],[-5452852,-14974862],[729117,63606],[1316219,-64134],[4552081,6765023]],
+    [[0,0],[0,0],[0,0],[0,0],[0,0]],// simplified
+  ];
+  // Simplified Pluto: use mean orbital elements approach (accurate to ~1° 1885-2099)
+  const L=norm360(238.958116+144.9600745*T*100);
+  // More terms from Meeus Table 37.a
+  let dl=0;
+  const Pluto_L=[[-19799805,19850055,0,1,-1,0],[1313869,-4928957,0,2,-2,0],
+    [18961,-215885,0,1,0,0],[1165628,1459884,0,0,1,0],[-14307871,12247013,1,-1,0,0]];
+  // Use a simplified direct formula instead
+  // Meeus gives for Pluto (valid ~1885-2099):
+  const Ja=34.35+3034.9057*T, Sa=50.08+1222.1138*T, Pa=238.96+144.9600*T;
+  // Longitude from Table 37.a (Meeus p.264) - abbreviated
+  const A=[[0,0,1],[0,0,2],[0,0,3],[0,0,4],[0,0,5],[0,0,6],
+           [0,1,-1],[0,1,0],[0,1,1],[0,1,2],[0,1,3],
+           [1,-1,0],[1,-1,1],[1,0,-1],[1,0,0],[1,0,1],[1,1,0],
+           [2,-2,0],[2,-1,-1],[2,-1,0],[2,-1,1],[2,0,0],[2,0,1],[3,-2,0],[3,-1,0]];
+  const AL=[[-19799805,19850055],[897144,-4954829],[611139,1211620],[-341639,-189585],[129027,-34992],
+            [-38215,31061],[31061,-19816],[-16976,3240],[-11764,-4950],[6118,-6222],
+            [-4066,-7429],[4159,-1390],[-6890,2141],[1908,-2028],[4973,3132],[-1277,3336],
+            [1022,-1172],[-156,1104],[780,-817],[-1086,2177],[763,-1012],[-491,1095],
+            [-1176,-3456],[1342,1472],[-1190,3042]];
+  let lon_c=0, lat_c=0, r_c=0;
+  for(let i=0;i<A.length;i++){
+    const arg=(A[i][0]*Ja+A[i][1]*Sa+A[i][2]*Pa)*_D2R;
+    lon_c+=(AL[i]?AL[i][0]*Math.sin(arg)+AL[i][1]*Math.cos(arg):0);
+  }
+  const plutoLon=norm360(Pa+lon_c/1e6);
+  // Approximate geocentric from heliocentric
+  const tau=T/10;
+  const eL=_vL(VSOP87.earth.L,tau);
+  const eR=_vR(VSOP87.earth.R,tau);
+  const pR=39.543+lon_c/1e7; // rough
+  const px=pR*Math.cos(plutoLon*_D2R), py=pR*Math.sin(plutoLon*_D2R);
+  const ex=eR*Math.cos(eL*_D2R),   ey=eR*Math.sin(eL*_D2R);
+  return {lon:norm360(Math.atan2(py-ey,px-ex)*_R2D), lat:17.14*Math.sin((plutoLon-110.3)*_D2R)*_D2R*_R2D, dist:pR};
+}
+
+// ── Main getPos dispatcher ───────────────────────────────────────
+// Returns {lon, lat, dist} in ecliptic degrees / AU
+function getPlanetPos(id, T_cent) {
+  const tau = T_cent/10; // convert centuries → millennia
+  if(id==='sun')    return _sunPos(tau);
+  if(id==='moon')   return _moonPos(T_cent);
+  if(id==='mnode')  return _meanNodePos(T_cent);
+  if(id==='tnode')  return _trueNodePos(T_cent);
+  if(id==='pluto')  return _plutoPos(T_cent);
+  const p=VSOP87[id]; if(!p||!p.L) return null;
+  return _geoFromVSOP(p, tau);
+}
+
+
+// ============================================================
+// Sign & position formatting
+// ============================================================
+const SIGNS     = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+const SIGN_ABBR = ['Ari','Tau','Gem','Can','Leo','Vir','Lib','Sco','Sag','Cap','Aqu','Pis'];
+
+function signOf(lon) { return SIGNS[Math.floor(norm360(lon)/30)]; }
+function signAbbr(lon) { return SIGN_ABBR[Math.floor(norm360(lon)/30)]; }
+
+// Visual display (Unicode signs — for on-screen list only)
+function degInSign(lon) {
+  const n = norm360(lon), si = Math.floor(n/30), d = n % 30;
+  return Math.floor(d) + '°' + Math.floor((d%1)*60) + '\'' + SIGNS[si];
+}
+// ASCII safe — for CSV, TXT, monospace exports
+function posASCII(lon) {
+  const n = norm360(lon), si = Math.floor(n/30), d = n % 30;
+  const deg = Math.floor(d), min = Math.floor((d-deg)*60), sec = Math.floor(((d-deg)*60 - min)*60);
+  return deg + SIGN_ABBR[si] + (min < 10 ? '0' : '') + min + '\'' + (sec < 10 ? '0' : '') + sec + '"';
+}
+// Decimal degrees (6dp)
+function posDecimal(lon) { return norm360(lon).toFixed(6); }
+// DMS broken out as object
+function posParts(lon) {
+  const n = norm360(lon), si = Math.floor(n/30), d = n % 30;
+  const deg = Math.floor(d), min = Math.floor((d-deg)*60), sec = +((d-deg)*3600 - min*60).toFixed(2);
+  return { sign: SIGN_ABBR[si], signNum: si+1, deg, min, sec, decimal: n };
+}
+
+// ============================================================
+// Aspect detection via interpolation
+// ============================================================
+function angularDiff(a, b) {
+  let d = ((a - b) % 360 + 360) % 360;
+  return d > 180 ? d - 360 : d;
+}
+function absAngDiff(a, b) { return Math.abs(angularDiff(a, b)); }
+
+function checkAspect(asp, diff) {
+  if (asp.angle < 0) return false; // parallel handled separately
+  const d = Math.abs(Math.abs(diff) - asp.angle);
+  const mirror = asp.angle === 0 ? false : Math.abs(360 - Math.abs(diff) - asp.angle);
+  return d <= asp.orb || (mirror !== false && mirror <= asp.orb);
+}
+
+// Find exact aspect crossing between two consecutive days
+function interpolateExact(diff0, diff1, asp, date0, date1) {
+  if (asp.angle < 0) return null;
+  // We look for sign change of (|diff| - asp.angle)
+  const f0 = Math.abs(diff0) - asp.angle;
+  const f1 = Math.abs(diff1) - asp.angle;
+  if (f0 * f1 > 0) return null;
+  const t = f0 / (f0 - f1);
+  const exact = new Date(date0.getTime() + t * (date1.getTime() - date0.getTime()));
+  return exact;
+}
+
+// ============================================================
+// Main calculation
+// ============================================================
+let ALL_RESULTS   = [];
+let ALL_INGRESSES = [];
+let ALL_LUNAR     = [];
+let CURRENT_VIEW  = 'general'; // 'general' | 'natal'
+let CURRENT_FILTER = null; // null = all, else asp.id
+
+function setViewMode(mode) {
+  CURRENT_VIEW = mode;
+  CURRENT_FILTER = null;
+  ['vmodeGeneral','vmodeNatal','vmodeIngress','vmodeLunar','vmodeEclipse'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.classList.remove('active');
+  });
+  const map={general:'vmodeGeneral',natal:'vmodeNatal',ingress:'vmodeIngress',lunar:'vmodeLunar',eclipse:'vmodeEclipse'};
+  const el=document.getElementById(map[mode]); if(el) el.classList.add('active');
+  applyFilters();
+}
+
+function applyFilters() {
+  let results;
+  if(CURRENT_VIEW==='general'){
+    results=ALL_RESULTS.filter(r=>r.type==='transit');
+    if(CURRENT_FILTER) results=results.filter(r=>r.asp&&r.asp.id===CURRENT_FILTER);
+    document.getElementById('resultsCount').textContent=results.length.toLocaleString()+' aspects';
+  } else if(CURRENT_VIEW==='natal'){
+    results=ALL_RESULTS.filter(r=>r.type==='natal');
+    if(CURRENT_FILTER) results=results.filter(r=>r.asp&&r.asp.id===CURRENT_FILTER);
+    document.getElementById('resultsCount').textContent=results.length.toLocaleString()+' natal aspects';
+  } else if(CURRENT_VIEW==='ingress'){
+    results=ALL_INGRESSES;
+    document.getElementById('resultsCount').textContent=results.length.toLocaleString()+' ingresses';
+  } else if(CURRENT_VIEW==='lunar'){
+    results=ALL_LUNAR.filter(r=>r.kind==='lunar');
+    document.getElementById('resultsCount').textContent=results.length.toLocaleString()+' phases';
+  } else if(CURRENT_VIEW==='eclipse'){
+    results=ALL_LUNAR.filter(r=>r.kind==='eclipse');
+    document.getElementById('resultsCount').textContent=results.length.toLocaleString()+' eclipses';
+  } else { results=[]; }
+  renderList(results);
+  if(document.getElementById('textPreviewPanel').style.display!=='none') buildTextPreview(results);
+}
+
+// ── MODULE 2: Sign Ingress Finder ──────────────────────────────────────────
+function findIngresses(startDate, endDate, planetIds, helio) {
+  const results=[], seen=new Set();
+  const STEP=6*3600*1000, nSteps=Math.ceil((endDate-startDate)/STEP)+1;
+  const SN=['Ari','Tau','Gem','Can','Leo','Vir','Lib','Sco','Sag','Cap','Aqu','Pis'];
+  const SS=['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+  const SL=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+  for(const pid of planetIds){
+    let prevLon=null,prevS=null;
+    for(let s=0;s<nSteps;s++){
+      const d=new Date(startDate.getTime()+s*STEP); if(d>endDate) break;
+      const T=jcent(jde(d)); const pos=getPlanetPos(pid,T); if(!pos) continue;
+      const lon=pos.lon;
+      if(prevLon!==null){
+        const prevSign=Math.floor(prevLon/30)%12, curSign=Math.floor(lon/30)%12;
+        if(prevSign!==curSign){
+          let motion=lon-prevLon; if(motion>180)motion-=360; if(motion<-180)motion+=360;
+          const isRetro=motion<0, enteredSign=isRetro?prevSign:curSign;
+          const boundary=enteredSign*30;
+          const span=motion, toBound=((boundary-prevLon+540)%360)-180;
+          const t=Math.abs(span)>0.001?Math.max(0,Math.min(1,toBound/span)):0.5;
+          const exact=new Date(startDate.getTime()+(prevS+t)*STEP);
+          const key=pid+'_ing_'+enteredSign+'_'+Math.round(exact.getTime()/3600000);
+          if(!seen.has(key)){
+            seen.add(key);
+            const eT=jcent(jde(exact)), ePos=getPlanetPos(pid,eT);
+            const info=PLANETS_CONFIG.find(x=>x.id===pid);
+            results.push({kind:'ingress',date:exact,planet:info,sign:enteredSign,
+              signAbb:SN[enteredSign],signSym:SS[enteredSign],signName:SL[enteredSign],
+              lon:ePos?ePos.lon:boundary,isRetro});
+          }
+        }
+      }
+      prevLon=lon; prevS=s;
+    }
+  }
+  results.sort((a,b)=>a.date-b.date); return results;
+}
+
+// ── MODULE 3: Lunar Phases & Eclipses Finder ───────────────────────────────
+function findLunarPhases(startDate, endDate, wantNew, wantFull, wantSolarEcl, wantLunarEcl) {
+  const results=[], seen=new Set();
+  const STEP=3*3600*1000, nSteps=Math.ceil((endDate-startDate)/STEP)+1;
+  let prevElong=null, prevS=null;
+  for(let s=0;s<nSteps;s++){
+    const d=new Date(startDate.getTime()+s*STEP); if(d>endDate) break;
+    const T=jcent(jde(d));
+    const sun=getPlanetPos('sun',T), moon=getPlanetPos('moon',T);
+    const elong=norm360(moon.lon-sun.lon);
+    if(prevElong!==null){
+      for(const target of [0,180]){
+        let f0=((prevElong-target+180)%360+360)%360-180;
+        let f1=((elong-target+180)%360+360)%360-180;
+        if(f0*f1<0&&Math.abs(f0-f1)<60){
+          const t=Math.abs(f0)/(Math.abs(f0)+Math.abs(f1));
+          const exact=new Date(startDate.getTime()+(prevS+t)*STEP);
+          const key=(target===0?'new':'full')+'_'+Math.round(exact.getTime()/3600000);
+          if(!seen.has(key)){
+            seen.add(key);
+            const eT=jcent(jde(exact));
+            const eMoon=getPlanetPos('moon',eT), eSun=getPlanetPos('sun',eT);
+            const eNode=getPlanetPos('tnode',eT);
+            const dN1=Math.abs(angularDiff(eMoon.lon,eNode.lon));
+            const dN2=Math.abs(angularDiff(eMoon.lon,norm360(eNode.lon+180)));
+            const dNode=Math.min(dN1,dN2);
+            const isNew=target===0;
+            const isSolarEcl=isNew&&dNode<18.5, isLunarEcl=!isNew&&dNode<12.0;
+            const isTotal=isNew?dNode<9.5:dNode<5.5;
+            if(isSolarEcl&&wantSolarEcl) results.push({kind:'eclipse',eclType:'solar',total:isTotal,date:exact,lon:eMoon.lon,lat:eMoon.lat,dNode,sunLon:eSun.lon});
+            if(isLunarEcl&&wantLunarEcl) results.push({kind:'eclipse',eclType:'lunar',total:isTotal,date:exact,lon:eMoon.lon,lat:eMoon.lat,dNode,sunLon:eSun.lon});
+            if(isNew&&wantNew)   results.push({kind:'lunar',phase:'new', date:exact,lon:eMoon.lon,lat:eMoon.lat});
+            if(!isNew&&wantFull) results.push({kind:'lunar',phase:'full',date:exact,lon:eMoon.lon,lat:eMoon.lat,sunLon:eSun.lon});
+          }
+        }
+      }
+    }
+    prevElong=elong; prevS=s;
+  }
+  results.sort((a,b)=>a.date-b.date); return results;
+}
+
+function getIngressPlanets(){
+  return PLANETS_CONFIG.filter(p=>{const el=document.getElementById('ipb_'+p.id);return el&&el.classList.contains('active');}).map(p=>p.id);
+}
+
+function runAspectarian() {
+  const startVal = document.getElementById('startDate').value;
+  const endVal   = document.getElementById('endDate').value;
+  if (!startVal || !endVal) { alert('Please enter both start and end dates.'); return; }
+  const startDate = new Date(startVal + 'T12:00:00Z');
+  const endDate   = new Date(endVal + 'T12:00:00Z');
+  if (endDate <= startDate) { alert('End date must be after start date.'); return; }
+  const days = (endDate - startDate) / 86400000;
+  if (days > 1825) { alert('Max range is 5 years for performance. Please shorten.'); return; }
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Calculating...';
+
+  document.getElementById('resultsCard').style.display = 'none';
+
+  setTimeout(() => {
+    try {
+      const results = calculate(startDate, endDate);
+
+      // Module 2: Ingresses
+      ALL_INGRESSES = [];
+      if(document.getElementById('ingressToggle').checked){
+        const ipids=getIngressPlanets();
+        if(ipids.length>0) ALL_INGRESSES=findIngresses(startDate,endDate,ipids,false);
+      }
+
+      // Module 3: Lunar phases & eclipses
+      ALL_LUNAR = [];
+      if(document.getElementById('lunarToggle').checked){
+        ALL_LUNAR=findLunarPhases(startDate,endDate,
+          document.getElementById('lunarNew').checked,
+          document.getElementById('lunarFull').checked,
+          document.getElementById('lunarSolarEcl').checked,
+          document.getElementById('lunarLunarEcl').checked);
+      }
+
+      displayResults(results, startDate, endDate);
+    } catch(e) {
+      alert('Error: ' + e.message);
+      console.error(e);
+    }
+    btn.disabled = false;
+    btn.textContent = '⊕ Calculate Aspects';
+  }, 50);
+}
+
+function getActivePlanets() {
+  return PLANETS_CONFIG.filter(p => {
+    const el = document.getElementById('pb_' + p.id);
+    return el && el.classList.contains('active');
+  }).map(p => p.id);
+}
+
+function getActiveAspects() {
+  return ASPECTS_CONFIG.filter(a => {
+    const el = document.getElementById('ab_' + a.id);
+    return el && el.classList.contains('active');
+  });
+}
+
+function calculate(startDate, endDate) {
+  const helio = document.getElementById('helioToggle').checked;
+  const planets = getActivePlanets();
+  const aspects = getActiveAspects();
+  const results = [];
+
+  // Natal chart positions
+  const natalOn = document.getElementById('natalToggle').checked;
+  let natalPositions = [];
+  if (natalOn) {
+    const natalDateVal = document.getElementById('natalDate').value;
+    const natalTimeVal = document.getElementById('natalTime').value || '12:00';
+    if (natalDateVal) {
+      const nd = new Date(natalDateVal + 'T' + natalTimeVal + ':00Z');
+      const nT = jcent(jde(nd));
+      const nPlanets = PLANETS_CONFIG.filter(p => {
+        const el = document.getElementById('npb_' + p.id);
+        return el && el.classList.contains('active');
+      });
+      for (const np of nPlanets) {
+        const pos = getPlanetPos(np.id, nT, helio);
+        if (pos) natalPositions.push({ ...np, pos });
+      }
+    }
+  }
+  const natalOrb = parseFloat(document.getElementById('natalOrb').value) || 2;
+
+  // Build pairs
+  const pairs = [];
+  for (let i = 0; i < planets.length; i++) {
+    for (let j = i+1; j < planets.length; j++) {
+      pairs.push([planets[i], planets[j]]);
+    }
+  }
+
+  const totalDays = Math.ceil((endDate - startDate) / 86400000);
+  // Step: 1 day for slow planets, 0.1 day (2.4hr) for Moon
+  // We'll step by 6 hours to catch Moon aspects
+
+  const stepHours = 6;
+  const stepMs = stepHours * 3600 * 1000;
+  const nSteps = Math.ceil((endDate - startDate) / stepMs) + 1;
+
+  // Cache positions per step
+  const posCache = new Map();
+  function getPos(id, date) {
+    const key = id + '_' + date.getTime();
+    if (!posCache.has(key)) {
+      const T = jcent(jde(date));
+      posCache.set(key, getPlanetPos(id, T, helio));
+    }
+    return posCache.get(key);
+  }
+
+  const seenExact = new Set();
+
+  for (const [p1id, p2id] of pairs) {
+    for (const asp of aspects) {
+      if (asp.angle < 0) continue; // skip parallel for now
+
+      let prev = null;
+      let prevDate = null;
+      let prevDiff = null;
+
+      for (let s = 0; s < nSteps; s++) {
+        const d = new Date(startDate.getTime() + s * stepMs);
+        if (d > endDate) break;
+
+        const pos1 = getPos(p1id, d);
+        const pos2 = getPos(p2id, d);
+        if (!pos1 || !pos2) continue;
+
+        const diff = angularDiff(pos1.lon, pos2.lon);
+
+        if (prevDiff !== null) {
+          // Detect exact crossing for any aspect angle including conjunction (0°)
+          let _crossed=false,_crossT=0;
+          for(const _tgt of (asp.angle===0?[0]:asp.angle===180?[180]:[asp.angle,-asp.angle])){
+            let _f0=prevDiff-_tgt,_f1=diff-_tgt;
+            _f0=((_f0+180)%360+360)%360-180; _f1=((_f1+180)%360+360)%360-180;
+            if(_f0*_f1<0&&Math.abs(_f0-_f1)<60){_crossT=Math.abs(_f0)/(Math.abs(_f0)+Math.abs(_f1));_crossed=true;break;}
+          }
+          if (_crossed) {
+            const t = _crossT;
+            const exactDate = new Date(prevDate.getTime() + t * stepMs);
+
+            // Dedup by date rounded to hour + pair + aspect
+            const key = p1id + '_' + p2id + '_' + asp.id + '_' + Math.round(exactDate.getTime() / 3600000);
+            if (!seenExact.has(key)) {
+              seenExact.add(key);
+              const T = jcent(jde(exactDate));
+              const ep1 = getPlanetPos(p1id, T, helio);
+              const ep2 = getPlanetPos(p2id, T, helio);
+              const exactDiff = ep1 && ep2 ? angularDiff(ep1.lon, ep2.lon) : diff;
+
+              results.push({
+                date: exactDate,
+                p1: PLANETS_CONFIG.find(x=>x.id===p1id),
+                p2: PLANETS_CONFIG.find(x=>x.id===p2id),
+                asp,
+                lon1: ep1 ? ep1.lon : pos1.lon,
+                lon2: ep2 ? ep2.lon : pos2.lon,
+                orb: Math.abs(Math.abs(exactDiff) - asp.angle),
+                type: 'transit',
+              });
+            }
+          }
+        }
+        prevDiff = diff;
+        prevDate = d;
+      }
+    }
+  }
+
+  // Natal aspects
+  if (natalOn && natalPositions.length > 0) {
+    for (const np of natalPositions) {
+      for (const pid of planets) {
+        if (pid === np.id) continue;
+        for (const asp of aspects) {
+          if (asp.angle < 0) continue;
+          let prevDiff = null, prevDate = null;
+          for (let s = 0; s < nSteps; s++) {
+            const d = new Date(startDate.getTime() + s * stepMs);
+            if (d > endDate) break;
+            const pos = getPos(pid, d);
+            if (!pos) continue;
+            const diff = angularDiff(pos.lon, np.pos.lon);
+            if (prevDiff !== null) {
+              let _nc=false,_nt=0;
+              for(const _tgt2 of (asp.angle===0?[0]:asp.angle===180?[180]:[asp.angle,-asp.angle])){
+                let _g0=prevDiff-_tgt2,_g1=diff-_tgt2;
+                _g0=((_g0+180)%360+360)%360-180; _g1=((_g1+180)%360+360)%360-180;
+                if(_g0*_g1<0&&Math.abs(_g0-_g1)<60){_nt=Math.abs(_g0)/(Math.abs(_g0)+Math.abs(_g1));_nc=true;break;}
+              }
+              if (_nc) {
+                const t = _nt;
+                const exactDate = new Date(prevDate.getTime() + t * stepMs);
+                const key = 'n_' + pid + '_' + np.id + '_' + asp.id + '_' + Math.round(exactDate.getTime() / 3600000);
+                if (!seenExact.has(key)) {
+                  seenExact.add(key);
+                  const T = jcent(jde(exactDate));
+                  const ep = getPlanetPos(pid, T, helio);
+                  results.push({
+                    date: exactDate,
+                    p1: PLANETS_CONFIG.find(x=>x.id===pid),
+                    p2: { ...np, name: np.name + '°N' },
+                    asp,
+                    lon1: ep ? ep.lon : pos.lon,
+                    lon2: np.pos.lon,
+                    orb: Math.abs(Math.abs(ep ? angularDiff(ep.lon, np.pos.lon) : diff) - asp.angle),
+                    type: 'natal',
+                  });
+                }
+              }
+            }
+            prevDiff = diff;
+            prevDate = d;
+          }
+        }
+      }
+    }
+  }
+
+  results.sort((a,b) => a.date - b.date);
+  return results;
+}
+
+function formatDate(d) {
+  return d.toISOString().slice(0,10);
+}
+function formatTime(d) {
+  return d.toISOString().slice(11,16) + ' UT';
+}
+// JD helper for CSV
+function dateToJD(d) {
+  return ((d.getTime() / 86400000) + 2440587.5).toFixed(5);
+}
+
+function displayResults(results, startDate, endDate) {
+  ALL_RESULTS = results;
+  CURRENT_VIEW = 'general';
+  CURRENT_FILTER = null;
+
+  const card = document.getElementById('resultsCard');
+  card.style.display = '';
+  document.getElementById('textPreviewPanel').style.display = 'none';
+
+  const hasNatal   = results.some(r=>r.type==='natal');
+  const hasIngress = ALL_INGRESSES.length>0;
+  const hasLunar   = ALL_LUNAR.filter(r=>r.kind==='lunar').length>0;
+  const hasEclipse = ALL_LUNAR.filter(r=>r.kind==='eclipse').length>0;
+  const vmBar=document.getElementById('viewModeBar');
+  vmBar.style.display=(hasNatal||hasIngress||hasLunar||hasEclipse)?'flex':'none';
+  ['vmodeGeneral','vmodeNatal','vmodeIngress','vmodeLunar','vmodeEclipse'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.classList.remove('active');
+  });
+  document.getElementById('vmodeGeneral').classList.add('active');
+  const tn=document.getElementById('vmodeNatal'); if(tn){tn.style.display=hasNatal?'':'none';}
+  const ti=document.getElementById('vmodeIngress'); if(ti){ti.style.display=hasIngress?'':'none'; if(hasIngress)ti.textContent='Ingresses ('+ALL_INGRESSES.length+')';}
+  const tl=document.getElementById('vmodeLunar'); if(tl){tl.style.display=hasLunar?'':'none'; if(hasLunar)tl.textContent='Lunar ('+ALL_LUNAR.filter(r=>r.kind==='lunar').length+')';}
+  const te=document.getElementById('vmodeEclipse'); if(te){te.style.display=hasEclipse?'':'none'; if(hasEclipse)te.textContent='Eclipses ('+ALL_LUNAR.filter(r=>r.kind==='eclipse').length+')';}
+
+  // Build aspect type filters from all results
+  const aspTypes = [...new Set(results.map(r => r.asp.id))];
+  const filterBar = document.getElementById('filterBar');
+  filterBar.innerHTML = '';
+  const allChip = document.createElement('button');
+  allChip.className = 'filter-chip on';
+  allChip.textContent = 'All';
+  allChip.onclick = () => {
+    filterBar.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('on'));
+    allChip.classList.add('on');
+    CURRENT_FILTER = null;
+    applyFilters();
+  };
+  filterBar.appendChild(allChip);
+
+  for (const aid of aspTypes) {
+    const ac = ASPECTS_CONFIG.find(a=>a.id===aid);
+    const chip = document.createElement('button');
+    chip.className = 'filter-chip';
+    // Use abbr + angle for clarity in filter chips
+    const angStr = ac.angle >= 0 ? ' ' + ac.angle + '°' : ' decl';
+    chip.textContent = ac.abbr + angStr + ' · ' + ac.name.replace(/\s*\(.*\)/,'');
+    chip.title = ac.name + (ac.angle >= 0 ? ' (' + ac.angle + '°)' : '');
+    chip.onclick = () => {
+      filterBar.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('on'));
+      chip.classList.add('on');
+      CURRENT_FILTER = aid;
+      applyFilters();
+    };
+    filterBar.appendChild(chip);
+  }
+
+  applyFilters();
+}
+
+function renderList(results) {
+  const list = document.getElementById('resultsList');
+  if(results.length===0){list.innerHTML='<div class="no-results">No results for current filter.</div>';return;}
+  const showDec = document.getElementById('degViewToggle')&&document.getElementById('degViewToggle').checked;
+  const frag=document.createDocumentFragment();
+  let lastDate='', rendered=0;
+  const CHUNK=3000;
+  for(const r of results){
+    if(rendered>=CHUNK){
+      const note=document.createElement('div');
+      note.style.cssText='text-align:center;padding:.6rem;color:var(--gold-dim);font-family:Cinzel,serif;font-size:.65rem;';
+      note.textContent='Showing first '+CHUNK.toLocaleString()+' of '+results.length.toLocaleString()+' — export CSV/TXT for full data';
+      frag.appendChild(note); break;
+    }
+    const dStr=formatDate(r.date);
+    if(dStr!==lastDate){
+      const sep=document.createElement('div'); sep.className='day-sep'; sep.textContent=dStr;
+      frag.appendChild(sep); lastDate=dStr;
+    }
+    const item=document.createElement('div'); item.className='aspect-item';
+    const dateDiv=document.createElement('div'); dateDiv.className='asp-date';
+    dateDiv.innerHTML='<span class="time">'+r.date.toISOString().slice(11,16)+' UT</span>';
+    const midDiv=document.createElement('div'); midDiv.className='asp-mid';
+    const posDiv=document.createElement('div'); posDiv.className='asp-pos';
+
+    if(r.kind==='ingress'){
+      const pcol=r.planet?r.planet.col:'#c9a84c';
+      const rxBadge=r.isRetro?' <span class="rx-badge">℞</span>':'';
+      midDiv.innerHTML=
+        '<span class="asp-body" style="color:'+pcol+'">'+(r.planet?r.planet.sym:'?')+'<span class="asp-bname">'+(r.planet?r.planet.name:'')+'</span></span>'+
+        '<span class="ingress-arrow'+(r.isRetro?' rx':'')+'">&#'+(r.isRetro?'8617':'8594')+';'+  '</span>'+
+        '<span class="asp-body" style="color:var(--gold)">'+r.signSym+'<span class="asp-bname">'+r.signName+'</span></span>'+rxBadge;
+      const pos=showDec?norm360(r.lon).toFixed(3)+'°':degInSign(r.lon);
+      posDiv.innerHTML="<span class=\"pos1\">"+pos+"</span><br><span class=\"pos2\">cusp "+r.signSym+"</span>";
+    } else if(r.kind==='lunar'){
+      const icon=r.phase==='new'?'🌑':'🌕', label=r.phase==='new'?'New Moon':'Full Moon', cls=r.phase==='new'?'new':'full';
+      midDiv.innerHTML='<span class="lunar-icon">'+icon+'</span><span class="lunar-badge '+cls+'">'+label+'</span><span class="asp-bname" style="font-size:.7rem;color:var(--muted)">'+degInSign(r.lon)+'</span>';
+      const pos=showDec?norm360(r.lon).toFixed(3)+'°':degInSign(r.lon);
+      const opp=(r.phase==='full'&&r.sunLon!=null)?'<br><span class="pos2">☉ '+(showDec?norm360(r.sunLon).toFixed(3)+'°':degInSign(r.sunLon))+'</span>':'';
+      posDiv.innerHTML='<span class="pos1">'+pos+'</span>'+opp;
+    } else if(r.kind==='eclipse'){
+      const isSol=r.eclType==='solar', icon=isSol?'🌑':'🌕', label=isSol?'Solar Eclipse':'Lunar Eclipse', cls=isSol?'solar-ecl':'lunar-ecl';
+      midDiv.innerHTML='<span class="lunar-icon">'+icon+'</span><span class="lunar-badge '+cls+'">'+label+'</span><span class="ecl-note">'+(r.total?'Total/Annular':'Partial')+'  node '+r.dNode.toFixed(1)+'°</span>';
+      const pos=showDec?norm360(r.lon).toFixed(3)+'°':degInSign(r.lon);
+      posDiv.innerHTML='<span class="pos1">'+pos+'</span><br><span class="pos2">lat '+r.lat.toFixed(2)+'°</span>';
+    } else {
+      // Aspect row (transit or natal)
+      const p1col=r.p1?r.p1.col:'#e0c8a0', p2col=r.p2?r.p2.col:'#e0c8a0';
+      const angLabel=r.asp.angle>=0?r.asp.angle+'°':'decl';
+      const aspTitle=r.asp.name.replace(/\s*\(.*\)/,'')+ ' '+angLabel;
+      midDiv.innerHTML=
+        '<span class="asp-body" style="color:'+p1col+'">'+(r.p1?r.p1.sym:'?')+'<span class="asp-bname">'+(r.p1?r.p1.name:'')+'</span></span>'+
+        '<span class="asp-sym '+r.asp.cls+'" title="'+aspTitle+'">'+r.asp.sym+'</span>'+
+        '<span class="asp-tag '+r.asp.cls+'">'+r.asp.abbr+'&thinsp;'+angLabel+'</span>'+
+        '<span class="asp-body" style="color:'+p2col+'">'+(r.p2?r.p2.sym:'?')+'<span class="asp-bname">'+(r.p2?r.p2.name:'')+(r.type==='natal'?'<sup class="natal-sup">N</sup>':'')+'</span></span>';
+      const pos1=showDec?norm360(r.lon1).toFixed(3)+'°':degInSign(r.lon1);
+      const pos2=showDec?norm360(r.lon2).toFixed(3)+'°':degInSign(r.lon2);
+      posDiv.innerHTML='<span class="pos1">'+pos1+'</span><br><span class="pos2">'+pos2+'</span>';
+    }
+    item.appendChild(dateDiv); item.appendChild(midDiv); item.appendChild(posDiv);
+    frag.appendChild(item); rendered++;
+  }
+  list.innerHTML=''; list.appendChild(frag);
+}
+
+function getVisibleResults() {
+  let results = ALL_RESULTS;
+  if (CURRENT_VIEW === 'general') results = results.filter(r => r.type === 'transit');
+  else if (CURRENT_VIEW === 'natal') results = results.filter(r => r.type === 'natal');
+  if (CURRENT_FILTER) results = results.filter(r => r.asp.id === CURRENT_FILTER);
+  return results;
+}
+
+// Kept as aliases pointing to canonical functions above
+function lonDecimal(lon) { return posDecimal(lon); }
+function lonDMS(lon) { return posASCII(lon); }
+
+// ── Smart CSV export ──
+// Generates BOM-prefixed UTF-8 CSV so Excel auto-detects encoding.
+// All aspect data in safe ASCII — no Unicode symbols in data cells.
+// Positions given in 3 formats for flexibility: DMS, Decimal, and sign+deg+min+sec split.
+function buildCSVRows(results) {
+  const hdr = [
+    'Date',        // YYYY-MM-DD
+    'Time_UT',     // HH:MM
+    'JD',          // Julian Day (useful for calculations)
+    'Planet1',     // Full name
+    'Planet2',     // Full name (+ [Natal] suffix if natal type)
+    'AspectAbbr',  // 3-4 char ASCII abbreviation  e.g. Cnj, Opp, Tri
+    'AspectName',  // Full English name  e.g. Conjunction
+    'AspectAngle', // Exact angle in degrees (number)  e.g. 0, 90, 120
+    'Orb',         // Orb in decimal degrees
+    'Type',        // transit | natal
+    // Planet 1 position columns
+    'P1_Sign',     // Sign abbreviation  e.g. Ari
+    'P1_SignNum',  // Sign number 1-12
+    'P1_Deg',      // Degree within sign 0-29
+    'P1_Min',      // Minutes 0-59
+    'P1_Sec',      // Seconds 0-59
+    'P1_Decimal',  // Full decimal longitude 0-360
+    'P1_DMS',      // Compact DMS  e.g. 14Ari23'15"
+    // Planet 2 position columns
+    'P2_Sign',
+    'P2_SignNum',
+    'P2_Deg',
+    'P2_Min',
+    'P2_Sec',
+    'P2_Decimal',
+    'P2_DMS',
+  ];
+  const rows = [hdr];
+  for (const r of results) {
+    const pp1 = posParts(r.lon1);
+    const pp2 = posParts(r.lon2);
+    const jd  = ((r.date.getTime() / 86400000) + 2440587.5).toFixed(5);
+    const p2name = (r.p2.name || '').replace(/,/g, ';');
+    rows.push([
+      formatDate(r.date),
+      r.date.toISOString().slice(11,16),
+      jd,
+      (r.p1.name || '').replace(/,/g, ';'),
+      p2name + (r.type === 'natal' ? ' [Natal]' : ''),
+      r.asp.abbr,
+      r.asp.name.replace(/[\(\)°]/g, '').trim(),
+      r.asp.angle >= 0 ? r.asp.angle : 'decl',
+      r.orb.toFixed(4),
+      r.type,
+      pp1.sign, pp1.signNum, pp1.deg, pp1.min, pp1.sec, pp1.decimal.toFixed(6), posASCII(r.lon1),
+      pp2.sign, pp2.signNum, pp2.deg, pp2.min, pp2.sec, pp2.decimal.toFixed(6), posASCII(r.lon2),
+    ]);
+  }
+  return rows;
+}
+
+function rowsToCSV(rows) {
+  return rows.map(row =>
+    row.map(v => {
+      const s = String(v === null || v === undefined ? '' : v);
+      // Quote if contains comma, quote, newline, or leading/trailing space
+      if (/[,"\n\r]/.test(s) || s !== s.trim()) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }).join(',')
+  ).join('\r\n'); // CRLF per RFC 4180
+}
+
+function exportCSV() {
+  const results = getVisibleResults();
+  const rows = buildCSVRows(results);
+  // UTF-8 BOM so Excel opens without encoding dialog
+  const bom = '\uFEFF';
+  const csv = bom + rowsToCSV(rows);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const range = document.getElementById('startDate').value + '_' + document.getElementById('endDate').value;
+  a.download = 'aspectarian_' + range + '.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+// ── Smart text preview ──
+// Uses posASCII() for positions so output is truly monospace-safe:
+// "14Ari23'15"" is always exactly 11 chars (2 deg + 3 sign + 2 min + 1 ' + 2 sec + 1 ")
+// Column widths are fixed so the table aligns in any monospaced viewer.
+function buildTextPreview(results) {
+  const startVal  = document.getElementById('startDate').value;
+  const endVal    = document.getElementById('endDate').value;
+  const helio     = document.getElementById('helioToggle').checked ? 'Heliocentric' : 'Geocentric';
+  const viewLabel = CURRENT_VIEW === 'natal' ? 'Natal Aspects' : 'General Aspects';
+  const showDec   = document.getElementById('degViewToggle') && document.getElementById('degViewToggle').checked;
+
+  // ── Header block ──
+  const lines = [];
+  const SEP80 = '─'.repeat(100);
+  lines.push('SE ASPECTARIAN');
+  lines.push('View     : ' + viewLabel);
+  lines.push('Range    : ' + startVal + ' to ' + endVal);
+  lines.push('System   : ' + helio);
+  lines.push('Aspects  : ' + results.length.toLocaleString());
+  lines.push('Generated: ' + new Date().toISOString().replace('T',' ').slice(0,19) + ' UTC');
+  lines.push('');
+
+  // ── Column definitions (fixed widths, ASCII only) ──
+  // DATE(10) TIME(5) P1(10) ABBR(4) ANG(6) P2(12) POS1(12) POS2(12) ORB(8) TYPE(7)
+  const W = { date:10, time:5, p1:10, abbr:4, ang:6, p2:12, pos:12, orb:8, type:7 };
+  const pad = (s, n) => String(s).slice(0,n).padEnd(n);
+  const rpad = (s, n) => String(s).slice(0,n).padStart(n);
+
+  const hdr =
+    pad('DATE',W.date) + ' ' + pad('TIME',W.time) + ' ' +
+    pad('PLANET1',W.p1) + ' ' + pad('ASP',W.abbr) + ' ' + pad('ANG',W.ang) + ' ' +
+    pad('PLANET2',W.p2) + ' ' + pad('POS1',W.pos) + ' ' + pad('POS2',W.pos) + ' ' +
+    pad('ORB',W.orb) + ' ' + pad('TYPE',W.type);
+  lines.push(hdr);
+  lines.push('─'.repeat(hdr.length));
+
+  // ── Data rows ──
+  let lastDate = '';
+  for (const r of results) {
+    const dStr  = formatDate(r.date);
+    if (dStr !== lastDate) {
+      // Day separator
+      if (lastDate !== '') lines.push('');
+      lastDate = dStr;
+    }
+    const tStr  = r.date.toISOString().slice(11,16);
+    const p1n   = r.p1.name || '';
+    const p2raw = (r.p2.name || '') + (r.type === 'natal' ? '[N]' : '');
+    const abbr  = r.asp.abbr;
+    const ang   = r.asp.angle >= 0 ? r.asp.angle + 'deg' : 'decl';
+    const pos1  = showDec ? norm360(r.lon1).toFixed(4) + 'd' : posASCII(r.lon1);
+    const pos2  = showDec ? norm360(r.lon2).toFixed(4) + 'd' : posASCII(r.lon2);
+    const orb   = '+/-' + r.orb.toFixed(3);
+
+    lines.push(
+      pad(dStr,W.date) + ' ' + pad(tStr,W.time) + ' ' +
+      pad(p1n,W.p1) + ' ' + pad(abbr,W.abbr) + ' ' + pad(ang,W.ang) + ' ' +
+      pad(p2raw,W.p2) + ' ' + pad(pos1,W.pos) + ' ' + pad(pos2,W.pos) + ' ' +
+      pad(orb,W.orb) + ' ' + pad(r.type,W.type)
+    );
+  }
+
+  lines.push('');
+  lines.push('─'.repeat(hdr.length));
+  lines.push('END  ' + results.length.toLocaleString() + ' records');
+
+  document.getElementById('textPreviewArea').value = lines.join('\n');
+}
+
+function toggleTextPreview() {
+  const panel = document.getElementById('textPreviewPanel');
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? '' : 'none';
+  if (isHidden) {
+    buildTextPreview(getVisibleResults());
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function copyTextPreview() {
+  const ta = document.getElementById('textPreviewArea');
+  ta.select();
+  try {
+    navigator.clipboard.writeText(ta.value).catch(() => document.execCommand('copy'));
+  } catch(e) { document.execCommand('copy'); }
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent = '✓ Copied';
+  setTimeout(() => btn.textContent = orig, 1500);
+}
+
+function downloadText() {
+  const text = document.getElementById('textPreviewArea').value;
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+  a.download = 'aspectarian.txt';
+  a.click();
+}
+
+function onDegViewChange() {
+  // Re-render visible list and update text preview if open
+  applyFilters();
+}
+
+function toggleNatal() {
+  document.getElementById('natalSection').style.display =
+    document.getElementById('natalToggle').checked ? '' : 'none';
+}
+
+// ============================================================
+// Init UI
+// ============================================================
+function initUI() {
+  // Date defaults
+  const today = new Date();
+  const end = new Date(today);
+  end.setMonth(end.getMonth() + 3);
+  document.getElementById('startDate').value = today.toISOString().slice(0,10);
+  document.getElementById('endDate').value = end.toISOString().slice(0,10);
+  document.getElementById('natalDate').value = '1990-01-01';
+
+  // Planet buttons
+  const pg = document.getElementById('planetGrid');
+  for (const p of PLANETS_CONFIG) {
+    const btn = document.createElement('div');
+    btn.className = 'planet-btn' + (p.default ? ' active' : '');
+    btn.id = 'pb_' + p.id;
+    btn.innerHTML = `<span style="color:${p.col}">${p.sym}</span><span>${p.name.slice(0,3)}</span>`;
+    btn.onclick = () => btn.classList.toggle('active');
+    pg.appendChild(btn);
+  }
+
+  // Natal planet buttons
+  const npg = document.getElementById('natalPlanetGrid');
+  for (const p of PLANETS_CONFIG) {
+    const btn = document.createElement('div');
+    btn.className = 'planet-btn' + (p.default ? ' active' : '');
+    btn.id = 'npb_' + p.id;
+    btn.innerHTML = `<span style="color:${p.col}">${p.sym}</span><span>${p.name.slice(0,3)}</span>`;
+    btn.onclick = () => btn.classList.toggle('active');
+    npg.appendChild(btn);
+  }
+  // Ingress planet buttons (independent from aspects)
+  const ipg = document.getElementById('ingressPlanetGrid');
+  if(ipg){
+    for(const p of PLANETS_CONFIG){
+      const btn=document.createElement('div');
+      btn.className='planet-btn'+(p.default?' active':'');
+      btn.id='ipb_'+p.id;
+      btn.innerHTML=`<span style="color:${p.col}">${p.sym}</span><span>${p.name.slice(0,3)}</span>`;
+      btn.onclick=()=>btn.classList.toggle('active');
+      ipg.appendChild(btn);
+    }
+  }
+
+  // Aspect buttons
+  const ag = document.getElementById('aspectGrid');
+  const defaultAsp = ['conjunction','opposition','trine','square','sextile','quincunx'];
+  for (const a of ASPECTS_CONFIG) {
+    const btn = document.createElement('div');
+    btn.className = 'aspect-btn' + (defaultAsp.includes(a.id) ? ' active' : '');
+    btn.id = 'ab_' + a.id;
+    const degLabel = a.angle >= 0 ? `<span class="asp-btn-deg">${a.angle}°</span>` : '';
+    const shortName = a.name.replace(/\s*\(.*\)/, ''); // strip "(NNN°)" from display name
+    btn.innerHTML = `<span class="sym ${a.cls}">${a.sym}</span><span class="asp-btn-name">${shortName}</span>${degLabel}`;
+    btn.onclick = () => btn.classList.toggle('active');
+    ag.appendChild(btn);
+  }
+}
+
+initUI();
+</script>
+</body>
+</html>
