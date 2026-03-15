@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SE Aspectarian</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0c1a;
+    --parchment: #f5f0e8;
+    --gold: #c9a84c;
+    --gold-dim: #8a6e30;
+    --rust: #8b3a2a;
+    --teal: #2a6b6b;
+    --panel: #1a1828;
+    --panel2: #13111f;
+    --border: rgba(201,168,76,0.25);
+    --text: #e8e0cc;
+    --muted: rgba(232,224,204,0.5);
+    --sun-col: #FFD700; --moon-col: #C0C0C0; --mer-col: #98FB98;
+    --ven-col: #FFB6C1; --mar-col: #FF6B6B; --jup-col: #FFA500;
+    --sat-col: #D2B48C; --ura-col: #7FFFD4; --nep-col: #6495ED;
+    --plu-col: #DDA0DD;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--panel2);
+    color: var(--text);
+    font-family: 'Crimson Pro', serif;
+    font-size: 16px;
+    min-height: 100vh;
+    background-image: 
+      radial-gradient(ellipse at 20% 20%, rgba(201,168,76,0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(42,107,107,0.07) 0%, transparent 50%);
+  }
+  header {
+    text-align: center;
+    padding: 2rem 1rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(201,168,76,0.08) 0%, transparent 100%);
+  }
+  header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.4rem, 5vw, 2.2rem);
+    color: var(--gold);
+    letter-spacing: 0.15em;
+    text-shadow: 0 0 30px rgba(201,168,76,0.3);
+  }
+  header p {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 0.9rem;
+    margin-top: 0.3rem;
+  }
+
+  .container { max-width: 700px; margin: 0 auto; padding: 0 0.75rem 3rem; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-top: 1.2rem;
+    overflow: hidden;
+  }
+  .card-header {
+    background: linear-gradient(90deg, rgba(201,168,76,0.12), transparent);
+    padding: 0.6rem 1rem;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+  }
+  .card-body { padding: 1rem; }
+
+  label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+  input[type="date"], input[type="time"], input[type="number"], select {
+    width: 100%;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 0.5rem 0.7rem;
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--gold); }
+  select option { background: var(--panel); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.6rem; }
+
+  .planet-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.4rem;
+    margin-top: 0.3rem;
+  }
+  .planet-btn {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    padding: 0.35rem 0.2rem;
+    font-size: 1.1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    line-height: 1;
+  }
+  .planet-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.1); }
+  .planet-btn span { display: block; font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 0.05em; margin-top: 0.15rem; color: inherit; opacity: 0.8; }
+
+  .aspect-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+    margin-top: 0.3rem;
+  }
+  .aspect-btn {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    padding: 0.3rem 0.2rem;
+    font-size: 0.75rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Crimson Pro', serif;
+    user-select: none;
+  }
+  .aspect-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.1); }
+  .aspect-btn .sym { font-size: 1rem; display: block; }
+
+  .orb-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.6rem; }
+  .orb-row input { width: 100%; }
+
+  .run-btn {
+    width: 100%;
+    padding: 0.85rem;
+    background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+    border: none;
+    border-radius: 5px;
+    color: var(--ink);
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    margin-top: 1.2rem;
+    transition: opacity 0.2s, transform 0.1s;
+    text-transform: uppercase;
+  }
+  .run-btn:active { transform: scale(0.98); opacity: 0.85; }
+  .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(90deg, rgba(42,107,107,0.12), transparent);
+  }
+  .results-title { font-family: 'Cinzel', serif; font-size: 0.75rem; letter-spacing: 0.15em; color: var(--teal); text-transform: uppercase; }
+  .results-count { font-size: 0.8rem; color: var(--muted); }
+
+  .filter-bar {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .filter-chip {
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-size: 0.75rem;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.15s;
+    font-family: 'Crimson Pro', serif;
+  }
+  .filter-chip.on { background: rgba(42,107,107,0.2); border-color: var(--teal); color: var(--text); }
+
+  .aspect-list { max-height: 65vh; overflow-y: auto; }
+
+  /* Day separator */
+  .day-sep {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    color: var(--gold-dim);
+    background: rgba(201,168,76,0.06);
+    padding: 0.25rem 1rem;
+    border-bottom: 1px solid var(--border);
+    border-top: 1px solid rgba(201,168,76,0.08);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .aspect-item {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    align-items: center;
+    padding: 0.45rem 0.8rem;
+    border-bottom: 1px solid rgba(255,255,255,0.035);
+    gap: 0.6rem;
+    transition: background 0.1s;
+  }
+  .aspect-item:hover { background: rgba(255,255,255,0.02); }
+
+  /* Time cell */
+  .asp-date { font-size: 0.7rem; line-height: 1.2; text-align: center; }
+  .asp-date .time { color: var(--gold-dim); font-family: 'Courier New', monospace; font-size: 0.68rem; }
+
+  /* Middle cell: symbols + names */
+  .asp-mid {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+  }
+  .asp-body {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.18rem;
+  }
+  .asp-bname {
+    font-family: 'Cinzel', serif;
+    font-size: 0.52rem;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-top: 0.05rem;
+  }
+  .asp-sym { font-size: 1rem; }
+  .natal-sup { font-size: 0.45rem; color: var(--teal); vertical-align: super; margin-left: 0.1rem; }
+
+  /* Position cell */
+  .asp-pos { font-size: 0.72rem; text-align: right; line-height: 1.45; font-family: 'Courier New', monospace; }
+  .pos1 { color: var(--text); }
+  .pos2 { color: var(--gold-dim); }
+
+  .conjunction { color: #e0c060; }
+  .opposition { color: #e06060; }
+  .trine { color: #60c060; }
+  .square { color: #e07040; }
+  .sextile { color: #60b0e0; }
+  .quincunx { color: #b060c0; }
+  .semisquare { color: #c08040; }
+  .sesquiquadrate { color: #c06030; }
+  .semisextile { color: #80c080; }
+  .quintile { color: #90c0d0; }
+  .biquintile { color: #7090d0; }
+
+  .loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+  }
+  .spinner {
+    width: 30px; height: 30px;
+    border: 2px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .no-results {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .tab-row {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1;
+    padding: 0.5rem;
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+  .toggle-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.6rem; }
+  .toggle { position: relative; width: 36px; height: 20px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-track {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+    border-radius: 20px; cursor: pointer; transition: background 0.2s;
+  }
+  .toggle input:checked + .toggle-track { background: rgba(201,168,76,0.3); border-color: var(--gold); }
+  .toggle-thumb {
+    position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; background: var(--muted);
+    border-radius: 50%; transition: transform 0.2s, background 0.2s;
+    pointer-events: none;
+  }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); background: var(--gold); }
+  .toggle-label { font-size: 0.85rem; color: var(--muted); cursor: pointer; }
+
+  .section-sep { margin-top: 0.8rem; }
+
+  /* Aspect tag in list items */
+  .asp-tag {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    letter-spacing: 0.05em;
+    padding: 0.08rem 0.25rem;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.25);
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .asp-tag.conjunction    { color: #e0c060; border-color: rgba(224,192,96,0.3);  }
+  .asp-tag.opposition     { color: #e06060; border-color: rgba(224,96,96,0.3);   }
+  .asp-tag.trine          { color: #60c060; border-color: rgba(96,192,96,0.3);   }
+  .asp-tag.square         { color: #e07040; border-color: rgba(224,112,64,0.3);  }
+  .asp-tag.sextile        { color: #60b0e0; border-color: rgba(96,176,224,0.3);  }
+  .asp-tag.quincunx       { color: #b060c0; border-color: rgba(176,96,192,0.3);  }
+  .asp-tag.semisquare     { color: #c08040; border-color: rgba(192,128,64,0.3);  }
+  .asp-tag.sesquiquadrate { color: #c06030; border-color: rgba(192,96,48,0.3);   }
+  .asp-tag.semisextile    { color: #80c080; border-color: rgba(128,192,128,0.3); }
+  .asp-tag.quintile       { color: #90c0d0; border-color: rgba(144,192,208,0.3); }
+  .asp-tag.biquintile     { color: #7090d0; border-color: rgba(112,144,208,0.3); }
+
+  /* Aspect button extras */
+  .asp-btn-name { display: block; font-size: 0.7rem; line-height: 1.3; }
+  .asp-btn-deg  { display: block; font-family: 'Cinzel',serif; font-size: 0.55rem; color: var(--gold-dim); letter-spacing: 0.05em; margin-top: 0.1rem; }
+  .aspect-btn   { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+  /* Degree view toggle in header */
+  .deg-toggle-wrap {
+    display: flex; align-items: center; gap: 0.25rem; cursor: pointer;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    transition: border-color 0.2s;
+  }
+  .deg-toggle-wrap:hover { border-color: var(--gold-dim); }
+  .deg-toggle-wrap input { display: none; }
+  .deg-toggle-track {
+    width: 26px; height: 14px; background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border); border-radius: 10px;
+    position: relative; transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .deg-toggle-track::after {
+    content: ''; position: absolute; top: 1px; left: 1px;
+    width: 10px; height: 10px; background: var(--muted);
+    border-radius: 50%; transition: transform 0.2s, background 0.2s;
+  }
+  .deg-toggle-wrap input:checked ~ .deg-toggle-track { background: rgba(201,168,76,0.3); border-color: var(--gold); }
+  .deg-toggle-wrap input:checked ~ .deg-toggle-track::after { transform: translateX(12px); background: var(--gold); }
+  .deg-toggle-label { font-family: 'Cinzel',serif; font-size: 0.6rem; letter-spacing: 0.1em; color: var(--muted); }
+  .deg-toggle-wrap:has(input:checked) .deg-toggle-label { color: var(--gold); }
+
+  /* scrollbar */
+  .aspect-list::-webkit-scrollbar { width: 4px; }
+  .aspect-list::-webkit-scrollbar-track { background: transparent; }
+  .aspect-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* View mode bar */
+  .view-mode-bar {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+  }
+  .vmode-btn {
+    flex: 1;
+    padding: 0.45rem 0.5rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .vmode-btn.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(201,168,76,0.05); }
+
+  /* Text preview panel */
+  .txt-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.8rem;
+    border-top: 1px solid var(--border);
+    background: rgba(0,0,0,0.3);
+  }
+  #textPreviewArea {
+    width: 100%;
+    min-height: 260px;
+    max-height: 50vh;
+    background: rgba(0,0,0,0.5);
+    border: none;
+    border-top: 1px solid var(--border);
+    color: #b8d8b0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    padding: 0.8rem 1rem;
+    resize: vertical;
+    outline: none;
+  }
+
+  .info-badge {
+    display: inline-block;
+    background: rgba(201,168,76,0.1);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    color: var(--gold-dim);
+    margin-left: 0.5rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.05em;
+  }
+  .export-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    font-size: 0.7rem;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.1em;
+    transition: all 0.15s;
+  }
+  .export-btn:hover { border-color: var(--gold); color: var(--gold); }
+</style>
+</head>
+<body>
+<header>
+  <h1>☿ SE Aspectarian</h1>
+  <p>Swiss Ephemeris Planetary Aspect Calculator</p>
+</header>
+
+<div class="container">
+
+  <!-- Date Range -->
+  <div class="card">
+    <div class="card-header">Date Range</div>
+    <div class="card-body">
+      <div class="grid2">
+        <div>
+          <label>Start Date</label>
+          <input type="date" id="startDate">
+        </div>
+        <div>
+          <label>End Date</label>
+          <input type="date" id="endDate">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Planets -->
+  <div class="card">
+    <div class="card-header">Planets & Bodies</div>
+    <div class="card-body">
+      <div class="planet-grid" id="planetGrid"></div>
+      <div class="toggle-row section-sep">
+        <label class="toggle"><input type="checkbox" id="helioToggle"><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+        <span class="toggle-label">Heliocentric (default: Geocentric)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aspects -->
+  <div class="card">
+    <div class="card-header">Aspects & Orbs</div>
+    <div class="card-body">
+      <div class="aspect-grid" id="aspectGrid"></div>
+    </div>
+  </div>
+
+  <!-- Natal -->
+  <div class="card">
+    <div class="card-header">Natal / Reference Chart <span class="info-badge">Optional</span></div>
+    <div class="card-body">
+      <div class="toggle-row">
+        <label class="toggle"><input type="checkbox" id="natalToggle" onchange="toggleNatal()"><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+        <span class="toggle-label">Include natal chart aspects</span>
+      </div>
+      <div id="natalSection" style="display:none; margin-top:0.8rem;">
+        <div class="grid2">
+          <div>
+            <label>Birth Date</label>
+            <input type="date" id="natalDate">
+          </div>
+          <div>
+            <label>Birth Time (UT)</label>
+            <input type="time" id="natalTime" value="12:00">
+          </div>
+        </div>
+        <div class="grid3" style="margin-top:0.6rem;">
+          <div>
+            <label>Lat (°)</label>
+            <input type="number" id="natalLat" value="51.5" step="0.1">
+          </div>
+          <div>
+            <label>Lon (°)</label>
+            <input type="number" id="natalLon" value="0.0" step="0.1">
+          </div>
+          <div>
+            <label>Orb (°)</label>
+            <input type="number" id="natalOrb" value="2" min="0" max="10" step="0.5">
+          </div>
+        </div>
+        <div style="margin-top:0.6rem;">
+          <label>Natal Planets</label>
+          <div class="planet-grid" id="natalPlanetGrid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="run-btn" id="runBtn" onclick="runAspectarian()">⊕ Calculate Aspects</button>
+
+  <!-- Results -->
+  <div class="card" id="resultsCard" style="display:none; margin-top:1.5rem;">
+    <div class="results-header">
+      <span class="results-title">Aspectarian Results</span>
+      <span style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">
+        <span class="results-count" id="resultsCount"></span>
+        <label class="deg-toggle-wrap" title="Toggle decimal degrees vs sign/degree display">
+          <input type="checkbox" id="degViewToggle" onchange="onDegViewChange()">
+          <span class="deg-toggle-track"></span>
+          <span class="deg-toggle-label">Dec°</span>
+        </label>
+        <button class="export-btn" onclick="exportCSV()" title="Download CSV">↓CSV</button>
+        <button class="export-btn" onclick="toggleTextPreview()" id="txtPreviewBtn" title="Text preview">≡TXT</button>
+      </span>
+    </div>
+    <!-- View mode toggle: General / Natal -->
+    <div class="view-mode-bar" id="viewModeBar" style="display:none;">
+      <button class="vmode-btn active" id="vmodeGeneral" onclick="setViewMode('general')">General Aspects</button>
+      <button class="vmode-btn" id="vmodeNatal" onclick="setViewMode('natal')">Natal Aspects</button>
+    </div>
+    <div class="filter-bar" id="filterBar"></div>
+    <div id="resultsList" class="aspect-list"></div>
+    <!-- Text preview panel -->
+    <div id="textPreviewPanel" style="display:none;">
+      <div class="txt-preview-header">
+        <span style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.15em;color:var(--gold);">TEXT PREVIEW</span>
+        <div style="display:flex;gap:0.4rem;">
+          <button class="export-btn" onclick="copyTextPreview()">Copy</button>
+          <button class="export-btn" onclick="downloadText()">↓TXT</button>
+          <button class="export-btn" onclick="toggleTextPreview()">✕</button>
+        </div>
+      </div>
+      <textarea id="textPreviewArea" readonly></textarea>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// Astronomical constants & planet data
+// ============================================================
+const DEG = Math.PI / 180;
+const RAD = 180 / Math.PI;
+
+const PLANETS_CONFIG = [
+  { id: 'sun',      sym: '☉', name: 'Sun',       col: '#FFD700', default: true  },
+  { id: 'moon',     sym: '☽', name: 'Moon',       col: '#C0C0C0', default: true  },
+  { id: 'mercury',  sym: '☿', name: 'Mercury',    col: '#98FB98', default: true  },
+  { id: 'venus',    sym: '♀', name: 'Venus',      col: '#FFB6C1', default: true  },
+  { id: 'mars',     sym: '♂', name: 'Mars',       col: '#FF6B6B', default: true  },
+  { id: 'jupiter',  sym: '♃', name: 'Jupiter',    col: '#FFA500', default: true  },
+  { id: 'saturn',   sym: '♄', name: 'Saturn',     col: '#D2B48C', default: true  },
+  { id: 'uranus',   sym: '⛢', name: 'Uranus',     col: '#7FFFD4', default: false },
+  { id: 'neptune',  sym: '♆', name: 'Neptune',    col: '#6495ED', default: false },
+  { id: 'pluto',    sym: '♇', name: 'Pluto',      col: '#DDA0DD', default: false },
+  { id: 'tnode',    sym: '☊', name: 'True Node',  col: '#E8C87A', default: false },
+  { id: 'mnode',    sym: '☋', name: 'Mean Node',  col: '#C8A860', default: false },
+];
+
+const ASPECTS_CONFIG = [
+  // id, name, abbrev (safe ASCII for export), angle (degrees), orb, symbol, css class
+  { id: 'conjunction',    name: 'Conjunction',       abbr: 'Cnj',  angle: 0,    orb: 8,   sym: '☌',  cls: 'conjunction'    },
+  { id: 'opposition',     name: 'Opposition',        abbr: 'Opp',  angle: 180,  orb: 8,   sym: '☍',  cls: 'opposition'     },
+  { id: 'trine',          name: 'Trine',             abbr: 'Tri',  angle: 120,  orb: 6,   sym: '△',  cls: 'trine'          },
+  { id: 'square',         name: 'Square',            abbr: 'Sqr',  angle: 90,   orb: 6,   sym: '□',  cls: 'square'         },
+  { id: 'sextile',        name: 'Sextile',           abbr: 'Sxt',  angle: 60,   orb: 5,   sym: '⚹',  cls: 'sextile'        },
+  { id: 'quincunx',       name: 'Quincunx (150°)',   abbr: 'Qnx',  angle: 150,  orb: 3,   sym: '⚻',  cls: 'quincunx'       },
+  { id: 'semisquare',     name: 'Semi-square (45°)', abbr: 'SSq',  angle: 45,   orb: 2,   sym: '∠',  cls: 'semisquare'     },
+  { id: 'sesquiquadrate', name: 'Sesquiquadrate (135°)', abbr: 'SsQ', angle: 135, orb: 2, sym: '⊼',  cls: 'sesquiquadrate' },
+  { id: 'semisextile',    name: 'Semi-sextile (30°)', abbr: 'SSx', angle: 30,   orb: 1.5, sym: '⚺',  cls: 'semisextile'    },
+  { id: 'quintile',       name: 'Quintile (72°)',    abbr: 'Qnt',  angle: 72,   orb: 1.5, sym: 'Q',  cls: 'quintile'       },
+  { id: 'biquintile',     name: 'Bi-quintile (144°)', abbr: 'BQn', angle: 144,  orb: 1.5, sym: 'bQ', cls: 'biquintile'     },
+  { id: 'tredecile',      name: 'Tredecile (108°)',  abbr: 'Tdc',  angle: 108,  orb: 1.5, sym: '3D', cls: 'quintile'       },
+  { id: 'novile',         name: 'Novile (40°)',      abbr: 'Nov',  angle: 40,   orb: 1,   sym: 'N',  cls: 'sextile'        },
+  { id: 'binovile',       name: 'Bi-novile (80°)',   abbr: 'bNv',  angle: 80,   orb: 1,   sym: 'bN', cls: 'sextile'        },
+  { id: 'quadranovile',   name: 'Quadra-novile (160°)', abbr: 'QNv', angle: 160, orb: 1,  sym: 'qN', cls: 'sextile'        },
+  { id: 'decile',         name: 'Decile (36°)',      abbr: 'Dcl',  angle: 36,   orb: 1,   sym: 'D',  cls: 'semisextile'    },
+  { id: 'quindecile',     name: 'Quindecile (165°)', abbr: 'Qdl',  angle: 165,  orb: 1.5, sym: 'qd', cls: 'quincunx'       },
+  { id: 'vigintile',      name: 'Vigintile (18°)',   abbr: 'Vgt',  angle: 18,   orb: 1,   sym: 'V',  cls: 'semisextile'    },
+  { id: 'parallel',       name: 'Parallel Decl',     abbr: 'Par',  angle: -1,   orb: 1,   sym: '∥',  cls: 'conjunction'    },
+  { id: 'contraparallel', name: 'Contra-parallel',   abbr: 'CPr',  angle: -2,   orb: 1,   sym: '⊬',  cls: 'opposition'     },
+];
+
+// SIGNS and SIGN_ABBR defined in formatting section below
+
+// ============================================================
+// Simplified VSOP87 / analytical planetary positions (J2000)
+// Returns { lon, lat, dist } in degrees/AU from mean ecliptic
+// Accuracy: ~1° for outer planets, ~0.1° for inner; good for aspectarian
+// ============================================================
+function jde(date) {
+  return (date.getTime() / 86400000) + 2440587.5;
+}
+
+function jcent(jd) {
+  return (jd - 2451545.0) / 36525.0;
+}
+
+function norm360(a) { return ((a % 360) + 360) % 360; }
+function normPI(a) { a = norm360(a); return a > 180 ? a - 360 : a; }
+
+// Mean elements from Meeus "Astronomical Algorithms" ch.33
+function sunPos(T) {
+  const L0 = norm360(280.46646 + 36000.76983*T);
+  const M = norm360(357.52911 + 35999.05029*T - 0.0001537*T*T) * DEG;
+  const C = (1.914602 - 0.004817*T - 0.000014*T*T)*Math.sin(M)
+           +(0.019993 - 0.000101*T)*Math.sin(2*M)
+           + 0.000289*Math.sin(3*M);
+  const sun = norm360(L0 + C);
+  const e = 0.016708634 - 0.000042037*T;
+  const v = M*RAD + C;
+  const R = 1.000001018*(1-e*e)/(1+e*Math.cos(v*DEG));
+  return { lon: sun, lat: 0, dist: R, decl: null };
+}
+
+function moonPos(T) {
+  const L = norm360(218.3164477 + 481267.88123421*T);
+  const D = norm360(297.8501921 + 445267.1114034*T);
+  const M = norm360(357.5291092 + 35999.0502909*T) * DEG;
+  const Mp = norm360(134.9633964 + 477198.8675055*T) * DEG;
+  const F = norm360(93.2720950 + 483202.0175233*T) * DEG;
+  const lon = L 
+    + 6.289*Math.sin(Mp)
+    - 1.274*Math.sin(2*D*DEG - Mp)
+    + 0.658*Math.sin(2*D*DEG)
+    - 0.186*Math.sin(M)
+    - 0.059*Math.sin(2*D*DEG - 2*Mp)
+    - 0.057*Math.sin(2*D*DEG - M - Mp)
+    + 0.053*Math.sin(2*D*DEG + Mp)
+    + 0.046*Math.sin(2*D*DEG - M)
+    + 0.041*Math.sin(Mp - M)
+    - 0.035*Math.sin(D*DEG)
+    - 0.031*Math.sin(Mp + M)
+    + 0.015*Math.sin(2*F - 2*D*DEG)
+    + 0.011*Math.sin(Mp - 4*D*DEG);
+  const lat = 5.128*Math.sin(F)
+    + 0.281*Math.sin(Mp + F)
+    - 0.280*Math.sin(F - Mp)
+    - 0.173*Math.sin(F - 2*D*DEG)
+    + 0.127*Math.sin(Mp - 2*D*DEG + F);
+  return { lon: norm360(lon), lat, dist: 1, decl: lat };
+}
+
+// Generic planet using orbital elements
+function planetPos(T, a, e0, de, i, Om, w, L0, dL) {
+  const e = e0 + de*T;
+  const L = norm360(L0 + dL*T) * DEG;
+  const Lsun = (280.46646 + 36000.76983*T) * DEG;
+  const Msun = (357.52911 + 35999.05029*T) * DEG;
+  const Rsun = 1.000001018*(1-(0.016708634-0.000042037*T)**2)/(1+(0.016708634-0.000042037*T)*Math.cos(Msun));
+  const om = (w + Om) * DEG;
+  const M = norm360(L*RAD - (w+Om)) * DEG;
+  let E = M;
+  for (let k=0;k<10;k++) E = M + e*Math.sin(E);
+  const v = 2*Math.atan(Math.sqrt((1+e)/(1-e))*Math.tan(E/2));
+  const r = a*(1-e*Math.cos(E));
+  const lam = v + om;
+  const iR = i*DEG, OmR = Om*DEG;
+  const x = r*(Math.cos(OmR)*Math.cos(lam) - Math.sin(OmR)*Math.sin(lam)*Math.cos(iR));
+  const y = r*(Math.sin(OmR)*Math.cos(lam) + Math.cos(OmR)*Math.sin(lam)*Math.cos(iR));
+  const z = r*Math.sin(lam)*Math.sin(iR);
+  const xsun = Rsun*Math.cos(Lsun);
+  const ysun = Rsun*Math.sin(Lsun);
+  const dx = x + xsun, dy = y + ysun;
+  const lon = norm360(Math.atan2(dy, dx)*RAD);
+  const lat = Math.atan2(z, Math.sqrt(dx*dx+dy*dy))*RAD;
+  const dist = Math.sqrt(dx*dx+dy*dy+z*z);
+  return { lon, lat, dist, decl: lat };
+}
+
+// Heliocentric version
+function planetPosHelio(T, a, e0, de, i, Om, w, L0, dL) {
+  const e = e0 + de*T;
+  const L = norm360(L0 + dL*T) * DEG;
+  const om = (w + Om) * DEG;
+  const M = norm360(L*RAD - (w+Om)) * DEG;
+  let E = M;
+  for (let k=0;k<10;k++) E = M + e*Math.sin(E);
+  const v = 2*Math.atan(Math.sqrt((1+e)/(1-e))*Math.tan(E/2));
+  const r = a*(1-e*Math.cos(E));
+  const lam = v + om;
+  const iR = i*DEG, OmR = Om*DEG;
+  const lon = norm360(Math.atan2(
+    Math.sin(OmR)*Math.cos(lam) + Math.cos(OmR)*Math.sin(lam)*Math.cos(iR),
+    Math.cos(OmR)*Math.cos(lam) - Math.sin(OmR)*Math.sin(lam)*Math.cos(iR)
+  )*RAD + OmR*RAD);
+  const lat = Math.asin(Math.sin(lam)*Math.sin(iR))*RAD;
+  return { lon: norm360(lon), lat, dist: r, decl: lat };
+}
+
+// Orbital element sets: [a, e0, de, i, Om, w, L0, dL] from Meeus / J2000
+const ORB = {
+  mercury: [0.38709927,0.20563593, 0.00001906, 7.00497902,  48.33076593, 77.45779628,  252.25032350,149472.67411175],
+  venus:   [0.72333566,0.00677672,-0.00004107, 3.39467605,  76.67984255,131.60246718,  181.97909950, 58517.81538729],
+  mars:    [1.52371034,0.09339410, 0.00007882, 1.84969142,  49.55953891,336.06023083,   -4.55343205, 19140.30268499],
+  jupiter: [5.20288700,0.04838624,-0.00013253, 1.30439695, 100.47390909, 14.72847983,   34.39644051,  3034.74612775],
+  saturn:  [9.53667594,0.05386179,-0.00050991, 2.48599187, 113.66242448, 92.59887831,   49.95424423,  1222.49362201],
+  uranus:  [19.18916464,0.04725744,-0.00004397,0.77263783,  74.01692503,170.95427630,  313.23810451,   428.48202785],
+  neptune: [30.06992276,0.00859048, 0.00005105,1.77004347,  131.7842257, 44.96476227,  -55.12002969,   218.45945325],
+  pluto:   [39.48211675,0.24882730, 0.00005170,17.14001206, 110.30393684,224.06891629,  238.92903833,   145.20780515],
+};
+
+// Mean Lunar Node (retrograde)
+function meanNodePos(T) {
+  const Om = norm360(125.04452 - 1934.136261*T + 0.0020708*T*T + T*T*T/450000);
+  return { lon: Om, lat: 0, dist: 1, decl: 0 };
+}
+
+// True Node (adds main perturbations to mean node)
+function trueNodePos(T) {
+  const Om = norm360(125.04452 - 1934.136261*T + 0.0020708*T*T);
+  const D  = norm360(297.8501921 + 445267.1114034*T) * DEG;
+  const M  = norm360(357.5291092 + 35999.0502909*T) * DEG;
+  const Mp = norm360(134.9633964 + 477198.8675055*T) * DEG;
+  const F  = norm360(93.2720950  + 483202.0175233*T) * DEG;
+  const dOm = -1.4979*Math.sin(2*(D-F))
+              -0.1500*Math.sin(M)
+              -0.1226*Math.sin(2*D)
+              +0.1176*Math.sin(2*F)
+              -0.0801*Math.sin(2*(Mp-F));
+  return { lon: norm360(Om + dOm), lat: 0, dist: 1, decl: 0 };
+}
+
+function getPlanetPos(id, T, helio) {
+  if (id === 'sun')   return helio ? { lon: 0, lat: 0, dist: 0, decl: 0 } : sunPos(T);
+  if (id === 'moon')  return helio ? null : moonPos(T);
+  if (id === 'mnode') return helio ? null : meanNodePos(T);
+  if (id === 'tnode') return helio ? null : trueNodePos(T);
+  const o = ORB[id];
+  if (!o) return null;
+  return helio ? planetPosHelio(T, ...o) : planetPos(T, ...o);
+}
+
+// ============================================================
+// Sign & position formatting
+// ============================================================
+const SIGNS     = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+const SIGN_ABBR = ['Ari','Tau','Gem','Can','Leo','Vir','Lib','Sco','Sag','Cap','Aqu','Pis'];
+
+function signOf(lon) { return SIGNS[Math.floor(norm360(lon)/30)]; }
+function signAbbr(lon) { return SIGN_ABBR[Math.floor(norm360(lon)/30)]; }
+
+// Visual display (Unicode signs — for on-screen list only)
+function degInSign(lon) {
+  const n = norm360(lon), si = Math.floor(n/30), d = n % 30;
+  return Math.floor(d) + '°' + Math.floor((d%1)*60) + '\'' + SIGNS[si];
+}
+// ASCII safe — for CSV, TXT, monospace exports
+function posASCII(lon) {
+  const n = norm360(lon), si = Math.floor(n/30), d = n % 30;
+  const deg = Math.floor(d), min = Math.floor((d-deg)*60), sec = Math.floor(((d-deg)*60 - min)*60);
+  return deg + SIGN_ABBR[si] + (min < 10 ? '0' : '') + min + '\'' + (sec < 10 ? '0' : '') + sec + '"';
+}
+// Decimal degrees (6dp)
+function posDecimal(lon) { return norm360(lon).toFixed(6); }
+// DMS broken out as object
+function posParts(lon) {
+  const n = norm360(lon), si = Math.floor(n/30), d = n % 30;
+  const deg = Math.floor(d), min = Math.floor((d-deg)*60), sec = +((d-deg)*3600 - min*60).toFixed(2);
+  return { sign: SIGN_ABBR[si], signNum: si+1, deg, min, sec, decimal: n };
+}
+
+// ============================================================
+// Aspect detection via interpolation
+// ============================================================
+function angularDiff(a, b) {
+  let d = ((a - b) % 360 + 360) % 360;
+  return d > 180 ? d - 360 : d;
+}
+function absAngDiff(a, b) { return Math.abs(angularDiff(a, b)); }
+
+function checkAspect(asp, diff) {
+  if (asp.angle < 0) return false; // parallel handled separately
+  const d = Math.abs(Math.abs(diff) - asp.angle);
+  const mirror = asp.angle === 0 ? false : Math.abs(360 - Math.abs(diff) - asp.angle);
+  return d <= asp.orb || (mirror !== false && mirror <= asp.orb);
+}
+
+// Find exact aspect crossing between two consecutive days
+function interpolateExact(diff0, diff1, asp, date0, date1) {
+  if (asp.angle < 0) return null;
+  // We look for sign change of (|diff| - asp.angle)
+  const f0 = Math.abs(diff0) - asp.angle;
+  const f1 = Math.abs(diff1) - asp.angle;
+  if (f0 * f1 > 0) return null;
+  const t = f0 / (f0 - f1);
+  const exact = new Date(date0.getTime() + t * (date1.getTime() - date0.getTime()));
+  return exact;
+}
+
+// ============================================================
+// Main calculation
+// ============================================================
+let ALL_RESULTS = [];
+let CURRENT_VIEW = 'general'; // 'general' | 'natal'
+let CURRENT_FILTER = null; // null = all, else asp.id
+
+function setViewMode(mode) {
+  CURRENT_VIEW = mode;
+  CURRENT_FILTER = null;
+  document.getElementById('vmodeGeneral').classList.toggle('active', mode === 'general');
+  document.getElementById('vmodeNatal').classList.toggle('active', mode === 'natal');
+  applyFilters();
+}
+
+function applyFilters() {
+  let results = ALL_RESULTS;
+  if (CURRENT_VIEW === 'general') results = results.filter(r => r.type === 'transit');
+  else if (CURRENT_VIEW === 'natal') results = results.filter(r => r.type === 'natal');
+  if (CURRENT_FILTER) results = results.filter(r => r.asp.id === CURRENT_FILTER);
+  document.getElementById('resultsCount').textContent = results.length + ' aspects';
+  renderList(results);
+  if (document.getElementById('textPreviewPanel').style.display !== 'none') {
+    buildTextPreview(results);
+  }
+}
+
+function runAspectarian() {
+  const startVal = document.getElementById('startDate').value;
+  const endVal   = document.getElementById('endDate').value;
+  if (!startVal || !endVal) { alert('Please enter both start and end dates.'); return; }
+  const startDate = new Date(startVal + 'T12:00:00Z');
+  const endDate   = new Date(endVal + 'T12:00:00Z');
+  if (endDate <= startDate) { alert('End date must be after start date.'); return; }
+  const days = (endDate - startDate) / 86400000;
+  if (days > 1825) { alert('Max range is 5 years for performance. Please shorten.'); return; }
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Calculating...';
+
+  document.getElementById('resultsCard').style.display = 'none';
+
+  setTimeout(() => {
+    try {
+      const results = calculate(startDate, endDate);
+      displayResults(results, startDate, endDate);
+    } catch(e) {
+      alert('Error: ' + e.message);
+      console.error(e);
+    }
+    btn.disabled = false;
+    btn.textContent = '⊕ Calculate Aspects';
+  }, 50);
+}
+
+function getActivePlanets() {
+  return PLANETS_CONFIG.filter(p => {
+    const el = document.getElementById('pb_' + p.id);
+    return el && el.classList.contains('active');
+  }).map(p => p.id);
+}
+
+function getActiveAspects() {
+  return ASPECTS_CONFIG.filter(a => {
+    const el = document.getElementById('ab_' + a.id);
+    return el && el.classList.contains('active');
+  });
+}
+
+function calculate(startDate, endDate) {
+  const helio = document.getElementById('helioToggle').checked;
+  const planets = getActivePlanets();
+  const aspects = getActiveAspects();
+  const results = [];
+
+  // Natal chart positions
+  const natalOn = document.getElementById('natalToggle').checked;
+  let natalPositions = [];
+  if (natalOn) {
+    const natalDateVal = document.getElementById('natalDate').value;
+    const natalTimeVal = document.getElementById('natalTime').value || '12:00';
+    if (natalDateVal) {
+      const nd = new Date(natalDateVal + 'T' + natalTimeVal + ':00Z');
+      const nT = jcent(jde(nd));
+      const nPlanets = PLANETS_CONFIG.filter(p => {
+        const el = document.getElementById('npb_' + p.id);
+        return el && el.classList.contains('active');
+      });
+      for (const np of nPlanets) {
+        const pos = getPlanetPos(np.id, nT, helio);
+        if (pos) natalPositions.push({ ...np, pos });
+      }
+    }
+  }
+  const natalOrb = parseFloat(document.getElementById('natalOrb').value) || 2;
+
+  // Build pairs
+  const pairs = [];
+  for (let i = 0; i < planets.length; i++) {
+    for (let j = i+1; j < planets.length; j++) {
+      pairs.push([planets[i], planets[j]]);
+    }
+  }
+
+  const totalDays = Math.ceil((endDate - startDate) / 86400000);
+  // Step: 1 day for slow planets, 0.1 day (2.4hr) for Moon
+  // We'll step by 6 hours to catch Moon aspects
+
+  const stepHours = 6;
+  const stepMs = stepHours * 3600 * 1000;
+  const nSteps = Math.ceil((endDate - startDate) / stepMs) + 1;
+
+  // Cache positions per step
+  const posCache = new Map();
+  function getPos(id, date) {
+    const key = id + '_' + date.getTime();
+    if (!posCache.has(key)) {
+      const T = jcent(jde(date));
+      posCache.set(key, getPlanetPos(id, T, helio));
+    }
+    return posCache.get(key);
+  }
+
+  const seenExact = new Set();
+
+  for (const [p1id, p2id] of pairs) {
+    for (const asp of aspects) {
+      if (asp.angle < 0) continue; // skip parallel for now
+
+      let prev = null;
+      let prevDate = null;
+      let prevDiff = null;
+
+      for (let s = 0; s < nSteps; s++) {
+        const d = new Date(startDate.getTime() + s * stepMs);
+        if (d > endDate) break;
+
+        const pos1 = getPos(p1id, d);
+        const pos2 = getPos(p2id, d);
+        if (!pos1 || !pos2) continue;
+
+        const diff = angularDiff(pos1.lon, pos2.lon);
+
+        if (prevDiff !== null) {
+          const f0 = Math.abs(prevDiff) - asp.angle;
+          const f1 = Math.abs(diff) - asp.angle;
+          if (f0 * f1 <= 0 && Math.abs(f0 - f1) < 20) {
+            // Sign change — exact crossing
+            const t = Math.abs(f0) / (Math.abs(f0) + Math.abs(f1));
+            const exactDate = new Date(prevDate.getTime() + t * stepMs);
+
+            // Dedup by date rounded to hour + pair + aspect
+            const key = p1id + '_' + p2id + '_' + asp.id + '_' + Math.round(exactDate.getTime() / 3600000);
+            if (!seenExact.has(key)) {
+              seenExact.add(key);
+              const T = jcent(jde(exactDate));
+              const ep1 = getPlanetPos(p1id, T, helio);
+              const ep2 = getPlanetPos(p2id, T, helio);
+              const exactDiff = ep1 && ep2 ? angularDiff(ep1.lon, ep2.lon) : diff;
+
+              results.push({
+                date: exactDate,
+                p1: PLANETS_CONFIG.find(x=>x.id===p1id),
+                p2: PLANETS_CONFIG.find(x=>x.id===p2id),
+                asp,
+                lon1: ep1 ? ep1.lon : pos1.lon,
+                lon2: ep2 ? ep2.lon : pos2.lon,
+                orb: Math.abs(Math.abs(exactDiff) - asp.angle),
+                type: 'transit',
+              });
+            }
+          }
+        }
+        prevDiff = diff;
+        prevDate = d;
+      }
+    }
+  }
+
+  // Natal aspects
+  if (natalOn && natalPositions.length > 0) {
+    for (const np of natalPositions) {
+      for (const pid of planets) {
+        if (pid === np.id) continue;
+        for (const asp of aspects) {
+          if (asp.angle < 0) continue;
+          let prevDiff = null, prevDate = null;
+          for (let s = 0; s < nSteps; s++) {
+            const d = new Date(startDate.getTime() + s * stepMs);
+            if (d > endDate) break;
+            const pos = getPos(pid, d);
+            if (!pos) continue;
+            const diff = angularDiff(pos.lon, np.pos.lon);
+            if (prevDiff !== null) {
+              const f0 = Math.abs(prevDiff) - asp.angle;
+              const f1 = Math.abs(diff) - asp.angle;
+              if (f0 * f1 <= 0 && Math.abs(f0-f1) < 20) {
+                const t = Math.abs(f0) / (Math.abs(f0) + Math.abs(f1));
+                const exactDate = new Date(prevDate.getTime() + t * stepMs);
+                const key = 'n_' + pid + '_' + np.id + '_' + asp.id + '_' + Math.round(exactDate.getTime() / 3600000);
+                if (!seenExact.has(key)) {
+                  seenExact.add(key);
+                  const T = jcent(jde(exactDate));
+                  const ep = getPlanetPos(pid, T, helio);
+                  results.push({
+                    date: exactDate,
+                    p1: PLANETS_CONFIG.find(x=>x.id===pid),
+                    p2: { ...np, name: np.name + '°N' },
+                    asp,
+                    lon1: ep ? ep.lon : pos.lon,
+                    lon2: np.pos.lon,
+                    orb: Math.abs(Math.abs(ep ? angularDiff(ep.lon, np.pos.lon) : diff) - asp.angle),
+                    type: 'natal',
+                  });
+                }
+              }
+            }
+            prevDiff = diff;
+            prevDate = d;
+          }
+        }
+      }
+    }
+  }
+
+  results.sort((a,b) => a.date - b.date);
+  return results;
+}
+
+function formatDate(d) {
+  return d.toISOString().slice(0,10);
+}
+function formatTime(d) {
+  return d.toISOString().slice(11,16) + ' UT';
+}
+// JD helper for CSV
+function dateToJD(d) {
+  return ((d.getTime() / 86400000) + 2440587.5).toFixed(5);
+}
+
+function displayResults(results, startDate, endDate) {
+  ALL_RESULTS = results;
+  CURRENT_VIEW = 'general';
+  CURRENT_FILTER = null;
+
+  const card = document.getElementById('resultsCard');
+  card.style.display = '';
+  document.getElementById('textPreviewPanel').style.display = 'none';
+
+  // Show/hide natal view mode toggle
+  const hasNatal = results.some(r => r.type === 'natal');
+  const vmBar = document.getElementById('viewModeBar');
+  vmBar.style.display = hasNatal ? 'flex' : 'none';
+  document.getElementById('vmodeGeneral').classList.add('active');
+  document.getElementById('vmodeNatal').classList.remove('active');
+
+  // Build aspect type filters from all results
+  const aspTypes = [...new Set(results.map(r => r.asp.id))];
+  const filterBar = document.getElementById('filterBar');
+  filterBar.innerHTML = '';
+  const allChip = document.createElement('button');
+  allChip.className = 'filter-chip on';
+  allChip.textContent = 'All';
+  allChip.onclick = () => {
+    filterBar.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('on'));
+    allChip.classList.add('on');
+    CURRENT_FILTER = null;
+    applyFilters();
+  };
+  filterBar.appendChild(allChip);
+
+  for (const aid of aspTypes) {
+    const ac = ASPECTS_CONFIG.find(a=>a.id===aid);
+    const chip = document.createElement('button');
+    chip.className = 'filter-chip';
+    // Use abbr + angle for clarity in filter chips
+    const angStr = ac.angle >= 0 ? ' ' + ac.angle + '°' : ' decl';
+    chip.textContent = ac.abbr + angStr + ' · ' + ac.name.replace(/\s*\(.*\)/,'');
+    chip.title = ac.name + (ac.angle >= 0 ? ' (' + ac.angle + '°)' : '');
+    chip.onclick = () => {
+      filterBar.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('on'));
+      chip.classList.add('on');
+      CURRENT_FILTER = aid;
+      applyFilters();
+    };
+    filterBar.appendChild(chip);
+  }
+
+  applyFilters();
+}
+
+function renderList(results) {
+  const list = document.getElementById('resultsList');
+  if (results.length === 0) {
+    list.innerHTML = '<div class="no-results">No aspects found for this selection.</div>';
+    return;
+  }
+  const showDec = document.getElementById('degViewToggle') && document.getElementById('degViewToggle').checked;
+  const frag = document.createDocumentFragment();
+  let lastDate = '';
+
+  for (const r of results) {
+    const dStr = formatDate(r.date);
+
+    // Day-break separator
+    if (dStr !== lastDate) {
+      if (lastDate !== '') {
+        const sep = document.createElement('div');
+        sep.className = 'day-sep';
+        sep.textContent = dStr;
+        frag.appendChild(sep);
+      } else {
+        const sep = document.createElement('div');
+        sep.className = 'day-sep';
+        sep.textContent = dStr;
+        frag.appendChild(sep);
+      }
+      lastDate = dStr;
+    }
+
+    const item = document.createElement('div');
+    item.className = 'aspect-item';
+
+    // ── Date/time cell ──
+    const dateDiv = document.createElement('div');
+    dateDiv.className = 'asp-date';
+    dateDiv.innerHTML = '<span class="time">' + r.date.toISOString().slice(11,16) + ' UT</span>';
+
+    // ── Planets + aspect cell ──
+    const midDiv = document.createElement('div');
+    midDiv.className = 'asp-mid';
+    const p1col = r.p1.col || '#e0c8a0';
+    const p2col = r.p2.col || '#e0c8a0';
+    const angLabel = r.asp.angle >= 0 ? r.asp.angle + '°' : 'decl';
+    const aspTitle = r.asp.name.replace(/\s*\(.*\)/,'') + ' ' + angLabel;
+    midDiv.innerHTML =
+      '<span class="asp-body" style="color:' + p1col + '">' + r.p1.sym + '<span class="asp-bname">' + r.p1.name + '</span></span>' +
+      '<span class="asp-sym ' + r.asp.cls + '" title="' + aspTitle + '">' + r.asp.sym + '</span>' +
+      '<span class="asp-tag ' + r.asp.cls + '" title="' + aspTitle + '">' + r.asp.abbr + ' ' + angLabel + '</span>' +
+      '<span class="asp-body" style="color:' + p2col + '">' + (r.p2.sym||'●') + '<span class="asp-bname">' + (r.p2.name||'') + (r.type==='natal'?'<sup class="natal-sup">N</sup>':'') + '</span></span>';
+
+    // ── Positions cell ──
+    const posDiv = document.createElement('div');
+    posDiv.className = 'asp-pos';
+    const pos1 = showDec ? norm360(r.lon1).toFixed(3)+'°' : degInSign(r.lon1);
+    const pos2 = showDec ? norm360(r.lon2).toFixed(3)+'°' : degInSign(r.lon2);
+    posDiv.innerHTML = '<span class="pos1">' + pos1 + '</span><br><span class="pos2">' + pos2 + '</span>';
+
+    item.appendChild(dateDiv);
+    item.appendChild(midDiv);
+    item.appendChild(posDiv);
+    frag.appendChild(item);
+  }
+  list.innerHTML = '';
+  list.appendChild(frag);
+}
+
+function getVisibleResults() {
+  let results = ALL_RESULTS;
+  if (CURRENT_VIEW === 'general') results = results.filter(r => r.type === 'transit');
+  else if (CURRENT_VIEW === 'natal') results = results.filter(r => r.type === 'natal');
+  if (CURRENT_FILTER) results = results.filter(r => r.asp.id === CURRENT_FILTER);
+  return results;
+}
+
+// Kept as aliases pointing to canonical functions above
+function lonDecimal(lon) { return posDecimal(lon); }
+function lonDMS(lon) { return posASCII(lon); }
+
+// ── Smart CSV export ──
+// Generates BOM-prefixed UTF-8 CSV so Excel auto-detects encoding.
+// All aspect data in safe ASCII — no Unicode symbols in data cells.
+// Positions given in 3 formats for flexibility: DMS, Decimal, and sign+deg+min+sec split.
+function buildCSVRows(results) {
+  const hdr = [
+    'Date',        // YYYY-MM-DD
+    'Time_UT',     // HH:MM
+    'JD',          // Julian Day (useful for calculations)
+    'Planet1',     // Full name
+    'Planet2',     // Full name (+ [Natal] suffix if natal type)
+    'AspectAbbr',  // 3-4 char ASCII abbreviation  e.g. Cnj, Opp, Tri
+    'AspectName',  // Full English name  e.g. Conjunction
+    'AspectAngle', // Exact angle in degrees (number)  e.g. 0, 90, 120
+    'Orb',         // Orb in decimal degrees
+    'Type',        // transit | natal
+    // Planet 1 position columns
+    'P1_Sign',     // Sign abbreviation  e.g. Ari
+    'P1_SignNum',  // Sign number 1-12
+    'P1_Deg',      // Degree within sign 0-29
+    'P1_Min',      // Minutes 0-59
+    'P1_Sec',      // Seconds 0-59
+    'P1_Decimal',  // Full decimal longitude 0-360
+    'P1_DMS',      // Compact DMS  e.g. 14Ari23'15"
+    // Planet 2 position columns
+    'P2_Sign',
+    'P2_SignNum',
+    'P2_Deg',
+    'P2_Min',
+    'P2_Sec',
+    'P2_Decimal',
+    'P2_DMS',
+  ];
+  const rows = [hdr];
+  for (const r of results) {
+    const pp1 = posParts(r.lon1);
+    const pp2 = posParts(r.lon2);
+    const jd  = ((r.date.getTime() / 86400000) + 2440587.5).toFixed(5);
+    const p2name = (r.p2.name || '').replace(/,/g, ';');
+    rows.push([
+      formatDate(r.date),
+      r.date.toISOString().slice(11,16),
+      jd,
+      (r.p1.name || '').replace(/,/g, ';'),
+      p2name + (r.type === 'natal' ? ' [Natal]' : ''),
+      r.asp.abbr,
+      r.asp.name.replace(/[\(\)°]/g, '').trim(),
+      r.asp.angle >= 0 ? r.asp.angle : 'decl',
+      r.orb.toFixed(4),
+      r.type,
+      pp1.sign, pp1.signNum, pp1.deg, pp1.min, pp1.sec, pp1.decimal.toFixed(6), posASCII(r.lon1),
+      pp2.sign, pp2.signNum, pp2.deg, pp2.min, pp2.sec, pp2.decimal.toFixed(6), posASCII(r.lon2),
+    ]);
+  }
+  return rows;
+}
+
+function rowsToCSV(rows) {
+  return rows.map(row =>
+    row.map(v => {
+      const s = String(v === null || v === undefined ? '' : v);
+      // Quote if contains comma, quote, newline, or leading/trailing space
+      if (/[,"\n\r]/.test(s) || s !== s.trim()) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }).join(',')
+  ).join('\r\n'); // CRLF per RFC 4180
+}
+
+function exportCSV() {
+  const results = getVisibleResults();
+  const rows = buildCSVRows(results);
+  // UTF-8 BOM so Excel opens without encoding dialog
+  const bom = '\uFEFF';
+  const csv = bom + rowsToCSV(rows);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const range = document.getElementById('startDate').value + '_' + document.getElementById('endDate').value;
+  a.download = 'aspectarian_' + range + '.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+// ── Smart text preview ──
+// Uses posASCII() for positions so output is truly monospace-safe:
+// "14Ari23'15"" is always exactly 11 chars (2 deg + 3 sign + 2 min + 1 ' + 2 sec + 1 ")
+// Column widths are fixed so the table aligns in any monospaced viewer.
+function buildTextPreview(results) {
+  const startVal  = document.getElementById('startDate').value;
+  const endVal    = document.getElementById('endDate').value;
+  const helio     = document.getElementById('helioToggle').checked ? 'Heliocentric' : 'Geocentric';
+  const viewLabel = CURRENT_VIEW === 'natal' ? 'Natal Aspects' : 'General Aspects';
+  const showDec   = document.getElementById('degViewToggle') && document.getElementById('degViewToggle').checked;
+
+  // ── Header block ──
+  const lines = [];
+  const SEP80 = '─'.repeat(100);
+  lines.push('SE ASPECTARIAN');
+  lines.push('View     : ' + viewLabel);
+  lines.push('Range    : ' + startVal + ' to ' + endVal);
+  lines.push('System   : ' + helio);
+  lines.push('Aspects  : ' + results.length.toLocaleString());
+  lines.push('Generated: ' + new Date().toISOString().replace('T',' ').slice(0,19) + ' UTC');
+  lines.push('');
+
+  // ── Column definitions (fixed widths, ASCII only) ──
+  // DATE(10) TIME(5) P1(10) ABBR(4) ANG(6) P2(12) POS1(12) POS2(12) ORB(8) TYPE(7)
+  const W = { date:10, time:5, p1:10, abbr:4, ang:6, p2:12, pos:12, orb:8, type:7 };
+  const pad = (s, n) => String(s).slice(0,n).padEnd(n);
+  const rpad = (s, n) => String(s).slice(0,n).padStart(n);
+
+  const hdr =
+    pad('DATE',W.date) + ' ' + pad('TIME',W.time) + ' ' +
+    pad('PLANET1',W.p1) + ' ' + pad('ASP',W.abbr) + ' ' + pad('ANG',W.ang) + ' ' +
+    pad('PLANET2',W.p2) + ' ' + pad('POS1',W.pos) + ' ' + pad('POS2',W.pos) + ' ' +
+    pad('ORB',W.orb) + ' ' + pad('TYPE',W.type);
+  lines.push(hdr);
+  lines.push('─'.repeat(hdr.length));
+
+  // ── Data rows ──
+  let lastDate = '';
+  for (const r of results) {
+    const dStr  = formatDate(r.date);
+    if (dStr !== lastDate) {
+      // Day separator
+      if (lastDate !== '') lines.push('');
+      lastDate = dStr;
+    }
+    const tStr  = r.date.toISOString().slice(11,16);
+    const p1n   = r.p1.name || '';
+    const p2raw = (r.p2.name || '') + (r.type === 'natal' ? '[N]' : '');
+    const abbr  = r.asp.abbr;
+    const ang   = r.asp.angle >= 0 ? r.asp.angle + 'deg' : 'decl';
+    const pos1  = showDec ? norm360(r.lon1).toFixed(4) + 'd' : posASCII(r.lon1);
+    const pos2  = showDec ? norm360(r.lon2).toFixed(4) + 'd' : posASCII(r.lon2);
+    const orb   = '+/-' + r.orb.toFixed(3);
+
+    lines.push(
+      pad(dStr,W.date) + ' ' + pad(tStr,W.time) + ' ' +
+      pad(p1n,W.p1) + ' ' + pad(abbr,W.abbr) + ' ' + pad(ang,W.ang) + ' ' +
+      pad(p2raw,W.p2) + ' ' + pad(pos1,W.pos) + ' ' + pad(pos2,W.pos) + ' ' +
+      pad(orb,W.orb) + ' ' + pad(r.type,W.type)
+    );
+  }
+
+  lines.push('');
+  lines.push('─'.repeat(hdr.length));
+  lines.push('END  ' + results.length.toLocaleString() + ' records');
+
+  document.getElementById('textPreviewArea').value = lines.join('\n');
+}
+
+function toggleTextPreview() {
+  const panel = document.getElementById('textPreviewPanel');
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? '' : 'none';
+  if (isHidden) {
+    buildTextPreview(getVisibleResults());
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function copyTextPreview() {
+  const ta = document.getElementById('textPreviewArea');
+  ta.select();
+  try {
+    navigator.clipboard.writeText(ta.value).catch(() => document.execCommand('copy'));
+  } catch(e) { document.execCommand('copy'); }
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent = '✓ Copied';
+  setTimeout(() => btn.textContent = orig, 1500);
+}
+
+function downloadText() {
+  const text = document.getElementById('textPreviewArea').value;
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+  a.download = 'aspectarian.txt';
+  a.click();
+}
+
+function onDegViewChange() {
+  // Re-render visible list and update text preview if open
+  applyFilters();
+}
+
+function toggleNatal() {
+  document.getElementById('natalSection').style.display =
+    document.getElementById('natalToggle').checked ? '' : 'none';
+}
+
+// ============================================================
+// Init UI
+// ============================================================
+function initUI() {
+  // Date defaults
+  const today = new Date();
+  const end = new Date(today);
+  end.setMonth(end.getMonth() + 3);
+  document.getElementById('startDate').value = today.toISOString().slice(0,10);
+  document.getElementById('endDate').value = end.toISOString().slice(0,10);
+  document.getElementById('natalDate').value = '1990-01-01';
+
+  // Planet buttons
+  const pg = document.getElementById('planetGrid');
+  for (const p of PLANETS_CONFIG) {
+    const btn = document.createElement('div');
+    btn.className = 'planet-btn' + (p.default ? ' active' : '');
+    btn.id = 'pb_' + p.id;
+    btn.innerHTML = `<span style="color:${p.col}">${p.sym}</span><span>${p.name.slice(0,3)}</span>`;
+    btn.onclick = () => btn.classList.toggle('active');
+    pg.appendChild(btn);
+  }
+
+  // Natal planet buttons
+  const npg = document.getElementById('natalPlanetGrid');
+  for (const p of PLANETS_CONFIG) {
+    const btn = document.createElement('div');
+    btn.className = 'planet-btn' + (p.default ? ' active' : '');
+    btn.id = 'npb_' + p.id;
+    btn.innerHTML = `<span style="color:${p.col}">${p.sym}</span><span>${p.name.slice(0,3)}</span>`;
+    btn.onclick = () => btn.classList.toggle('active');
+    npg.appendChild(btn);
+  }
+
+  // Aspect buttons
+  const ag = document.getElementById('aspectGrid');
+  const defaultAsp = ['conjunction','opposition','trine','square','sextile','quincunx'];
+  for (const a of ASPECTS_CONFIG) {
+    const btn = document.createElement('div');
+    btn.className = 'aspect-btn' + (defaultAsp.includes(a.id) ? ' active' : '');
+    btn.id = 'ab_' + a.id;
+    const degLabel = a.angle >= 0 ? `<span class="asp-btn-deg">${a.angle}°</span>` : '';
+    const shortName = a.name.replace(/\s*\(.*\)/, ''); // strip "(NNN°)" from display name
+    btn.innerHTML = `<span class="sym ${a.cls}">${a.sym}</span><span class="asp-btn-name">${shortName}</span>${degLabel}`;
+    btn.onclick = () => btn.classList.toggle('active');
+    ag.appendChild(btn);
+  }
+}
+
+initUI();
+</script>
+</body>
+</html>
