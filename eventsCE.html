@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AstroEvents Core Engine</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #080a0f;
+  --panel: #11141d;
+  --card: #161b26;
+  --card-hover: #1f2635;
+  --border: #242c3d;
+  --text: #f3f4f6;
+  --muted: #9ca3af;
+  --gold: #fbbf24;
+  --red: #f87171;
+  --green: #4ade80;
+  --purple: #c084fc;
+  --blue: #3b82f6;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+}
+
+* {
+  box-sizing: border-box;
+  outline: none;
+}
+
+body {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding-bottom: 90px;
+  -webkit-font-smoothing: antialiased;
+}
+
+header {
+  padding: 16px 20px;
+  position: sticky;
+  top: 0;
+  background: rgba(8, 10, 15, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 10;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.importBtn {
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--blue);
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all 0.2s;
+}
+
+.importBtn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+#searchBox {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: white;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+#searchBox:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.app-view {
+  display: none;
+}
+
+.app-view.active {
+  display: block;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.card.clickable:hover {
+  background: var(--card-hover);
+  cursor: pointer;
+  border-color: #313b52;
+  transform: translateY(-1px);
+}
+
+.big {
+  font-size: 32px;
+  font-weight: 700;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.weekCard {
+  margin-top: 12px;
+}
+
+.sectionTitle {
+  margin: 24px 0 12px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.75px;
+}
+
+.grid-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.pill-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.pill-box:hover {
+  background: var(--card-hover);
+  border-color: #313b52;
+}
+
+.pill-box.active {
+  border-color: var(--blue);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.pill-box.filter-active {
+  border-color: var(--green);
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.pill-box.quick-active {
+  border-color: var(--gold);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.pill-count {
+  background: var(--border);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.timeline-group {
+  margin-bottom: 20px;
+}
+
+.timeline-header {
+  position: sticky;
+  top: 110px;
+  background: var(--bg);
+  padding: 10px 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--blue);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 5;
+  border-bottom: 1px dashed var(--border);
+  margin-bottom: 10px;
+}
+
+.timeline-header span.relative-day {
+  font-size: 11px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.event {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  border-left: 4px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.15s;
+}
+
+.event:hover {
+  background: var(--card-hover);
+  border-color: #313b52;
+}
+
+.event.red { border-left-color: var(--red); }
+.event.green { border-left-color: var(--green); }
+.event.purple { border-left-color: var(--purple); }
+
+.event-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.event-details {
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.event-details b {
+  color: #fff;
+  background: var(--border);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.coord-label {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  gap: 12px;
+}
+
+.coord-label span {
+  color: var(--text);
+}
+
+.meta-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.accountName {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--card);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.angleName {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.event-meta {
+  text-align: right;
+}
+
+.time {
+  font-weight: 700;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.orb-display {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.orb-display.tight { color: var(--green); }
+.orb-display.wide { color: var(--muted); }
+
+/* COLLAPSIBLE ADVANCED DRAWER */
+.filter-drawer-toggle {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.filter-drawer-toggle:hover {
+  background: var(--card-hover);
+}
+
+.filter-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 16px;
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.filter-panel.open {
+  display: flex;
+}
+
+.filter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-row label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.filter-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--blue);
+}
+
+.date-pickers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.date-pickers input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: white;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.bottomNav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 70px;
+  background: rgba(17, 20, 29, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  z-index: 100;
+}
+
+.navItem {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.navItem:hover { color: white; }
+.navItem.active { color: var(--blue); }
+.navIcon { font-size: 18px; }
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 13px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.btn-danger { background: #271c1c; border: 1px solid #4c2727; color: var(--red); padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; width: 100%; border-style: none; transition: all 0.2s;}
+.btn-danger:hover { background: #351f1f; }
+.btn-secondary { background: #1c2333; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 12px; transition: all 0.2s;}
+.btn-secondary:hover { background: #242e44; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <h1>✨ AstroEvents Engine</h1>
+    <label class="importBtn">
+      📥 Import File
+      <input id="fileInput" type="file" multiple accept=".txt,.csv" hidden>
+    </label>
+  </div>
+  <input id="searchBox" placeholder="Quick find objects, aspects, or targets...">
+</header>
+
+<div class="container">
+
+  <div id="view-dashboard" class="app-view active">
+    <div class="stats">
+      <div class="card clickable" onclick="setFastDate('today')">
+        <div class="label">Today</div>
+        <div id="stat-today" class="big">0</div>
+      </div>
+      <div class="card clickable" onclick="setFastDate('tomorrow')">
+        <div class="label">Tomorrow</div>
+        <div id="stat-tomorrow" class="big">0</div>
+      </div>
+    </div>
+
+    <div class="card weekCard clickable" onclick="setFastDate('week')">
+      <div class="label">This Week Matrix</div>
+      <div id="stat-week" class="big">0</div>
+    </div>
+
+    <div class="sectionTitle">Data Accounts</div>
+    <div id="accountsContainer" class="grid-list"></div>
+    
+    <div class="sectionTitle">Aspect Quick Filters</div>
+    <div id="quickFilters" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+  </div>
+
+  <div id="view-events" class="app-view">
+    
+    <div class="filter-drawer-toggle" onclick="toggleFilterDrawer()">
+      <span>🎛️ Advanced Boundary Constraints</span>
+      <span id="drawerArrow">▼</span>
+    </div>
+
+    <div class="filter-panel" id="filterPanelDrawer">
+      <div class="date-pickers">
+        <div class="filter-row">
+          <label>Start Range</label>
+          <input type="date" id="filterStartDate">
+        </div>
+        <div class="filter-row">
+          <label>End Range</label>
+          <input type="date" id="filterEndDate">
+        </div>
+      </div>
+      <div class="filter-row">
+        <div style="display:flex; justify-content:space-between;">
+          <label>Max Orb Deviation</label>
+          <span id="orbDisplayValue" style="font-size:12px; font-weight:700; color:var(--blue);">+/- 1.000</span>
+        </div>
+        <input type="range" id="filterMaxOrb" min="0" max="1" step="0.001" value="1">
+      </div>
+    </div>
+
+    <div class="sectionTitle" id="eventsListTitle">Timeline Lineup</div>
+    <div id="eventsContainer"></div>
+  </div>
+
+  <div id="view-search" class="app-view">
+    <div class="sectionTitle">Filter by Tracked Bodies</div>
+    <div id="objectFilters" style="display:flex; gap:8px; flex-wrap:wrap; max-height:450px; overflow-y:auto; padding-right:4px;"></div>
+  </div>
+
+  <div id="view-settings" class="app-view">
+    <div class="sectionTitle">Utilities</div>
+    <button class="btn-secondary" onclick="generateMockData()">⚡ Inject Demo Astrology Streams (2026 Layout)</button>
+    <button class="btn-danger" onclick="clearAllData()">🗑️ Flush Engine Memory Storage</button>
+  </div>
+
+</div>
+
+<div class="bottomNav">
+  <div class="navItem active" onclick="switchView('dashboard')" id="nav-dashboard">
+    <span class="navIcon">🏠</span><span>Dashboard</span>
+  </div>
+  <div class="navItem" onclick="switchView('events')" id="nav-events">
+    <span class="navIcon">📅</span><span>Timeline</span>
+  </div>
+  <div class="navItem" onclick="switchView('search')" id="nav-search">
+    <span class="navIcon">🪐</span><span>Bodies</span>
+  </div>
+  <div class="navItem" onclick="switchView('settings')" id="nav-settings">
+    <span class="navIcon">⚙️</span><span>Options</span>
+  </div>
+</div>
+
+<script>
+let selectedAccounts = new Set();
+let selectedObjects = new Set();
+let discoveredObjects = new Set();
+let activeQuickFilter = "";
+let events = [];
+let accounts = {};
+
+const dateRegex = /^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})/;
+
+document.getElementById("fileInput").addEventListener("change", importFiles);
+document.getElementById("searchBox").addEventListener("input", () => renderEvents());
+document.getElementById("filterStartDate").addEventListener("change", () => renderEvents());
+document.getElementById("filterEndDate").addEventListener("change", () => renderEvents());
+document.getElementById("filterMaxOrb").addEventListener("input", (e) => {
+  document.getElementById("orbDisplayValue").textContent = `+/- ${parseFloat(e.target.value).toFixed(3)}`;
+  renderEvents();
+});
+
+function switchView(viewName) {
+  document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.navItem').forEach(n => n.classList.remove('active'));
+  
+  document.getElementById(`view-${viewName}`).classList.add('active');
+  document.getElementById(`nav-${viewName}`).classList.add('active');
+  renderEvents();
+}
+
+function toggleFilterDrawer() {
+  const panel = document.getElementById("filterPanelDrawer");
+  const arrow = document.getElementById("drawerArrow");
+  if(panel.classList.contains("open")) {
+    panel.classList.remove("open");
+    arrow.textContent = "▼";
+  } else {
+    panel.classList.add("open");
+    arrow.textContent = "▲";
+  }
+}
+
+function setFastDate(type) {
+  const now = new Date();
+  const format = d => d.toISOString().split('T')[0];
+  document.getElementById("filterStartDate").value = format(now);
+  
+  let end = new Date();
+  if (type === 'today') end = now;
+  if (type === 'tomorrow') end.setDate(now.getDate() + 1);
+  if (type === 'week') end.setDate(now.getDate() + 7);
+  
+  document.getElementById("filterEndDate").value = format(end);
+  switchView('events');
+}
+
+function importFiles(e) {
+  const files = e.target.files;
+  if(!files.length) return;
+  
+  let processed = 0;
+  for (const file of files) {
+    const reader = new FileReader();
+    const accountName = file.name.replace(/\.[^/.]+$/, "");
+    
+    reader.onload = () => {
+      if (!accounts[accountName]) {
+        accounts[accountName] = { name: accountName, count: 0 };
+      }
+      parseFile(accountName, reader.result);
+      selectedAccounts.add(accountName);
+      
+      processed++;
+      if (processed === files.length) {
+        completeDataRefresh();
+      }
+    };
+    reader.readAsText(file);
+  }
+}
+
+function parseFile(account, text) {
+  const lines = text.split(/\r?\n/);
+  for (let line of lines) {
+    line = line.trim();
+    if (!dateRegex.test(line)) continue;
+    
+    const parsed = parseEventLine(account, line);
+    if (parsed) {
+      events.push(parsed);
+      accounts[account].count++;
+    }
+  }
+}
+
+function formatCoordDegree(coordStr) {
+  if (!coordStr) return "";
+  const match = coordStr.match(/^(\d+)([A-Za-z]{3})(\d+)'/);
+  if (match) {
+    return `${match[1]}° ${match[2]} ${match[3]}'`;
+  }
+  return coordStr;
+}
+
+function parseEventLine(account, line) {
+  const match = line.match(dateRegex);
+  if (!match) return null;
+
+  const date = match[1];
+  const time = match[2];
+  
+  let rest = line.substring(match[0].length).trim();
+  const tokens = rest.split(/\s+/);
+  if (tokens.length < 7) return null;
+
+  const body1 = tokens[0];
+  const aspect = tokens[1];
+  const angle = tokens[2].replace('deg', '°');
+  
+  const orbStr = tokens[tokens.length - 2];
+  const pos2Str = tokens[tokens.length - 3];
+  const pos1Str = tokens[tokens.length - 4];
+  const pos1Index = tokens.length - 4;
+  
+  const body2 = tokens.slice(3, pos1Index).join(" ");
+  const orb = Math.abs(parseFloat(orbStr.replace(/[^\d.-]/g, '')) || 0);
+  
+  const dt = new Date(date + "T" + time);
+
+  discoveredObjects.add(body1);
+  discoveredObjects.add(body2);
+
+  return {
+    account, date, time, datetime: dt.getTime(),
+    body1, aspect, angle, body2, orb,
+    pos1Formatted: formatCoordDegree(pos1Str),
+    pos2Formatted: formatCoordDegree(pos2Str),
+    search: (account + " " + body1 + " " + aspect + " " + body2).toLowerCase()
+  };
+}
+
+function completeDataRefresh() {
+  saveState();
+  renderAccounts();
+  renderQuickFilters();
+  renderObjectFilters();
+  renderEvents();
+  updateStats();
+}
+
+function getRelativeDayString(dateStr) {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  
+  const target = new Date(dateStr + "T00:00:00");
+  target.setHours(0,0,0,0);
+  
+  const diffTime = target.getTime() - today.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Tomorrow";
+  if (diffDays === -1) return "Yesterday";
+  if (diffDays > 1 && diffDays <= 7) return `In ${diffDays} Days`;
+  return target.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+}
+
+function renderEvents() {
+  const search = document.getElementById("searchBox").value.toLowerCase();
+  const startFilter = document.getElementById("filterStartDate").value;
+  const endFilter = document.getElementById("filterEndDate").value;
+  const maxOrb = parseFloat(document.getElementById("filterMaxOrb").value);
+  
+  const container = document.getElementById("eventsContainer");
+  container.innerHTML = "";
+
+  let filtered = events
+    .filter(e => selectedAccounts.size === 0 || selectedAccounts.has(e.account))
+    .filter(e => selectedObjects.size === 0 || selectedObjects.has(e.body1) || selectedObjects.has(e.body2))
+    .filter(e => e.orb <= maxOrb)
+    .filter(e => {
+      if (startFilter && e.date < startFilter) return false;
+      if (endFilter && e.date > endFilter) return false;
+      return true;
+    })
+    .filter(e => {
+      if (!activeQuickFilter) return true;
+      if (activeQuickFilter === "Lots") return e.body1.includes("Lot") || e.body2.includes("Lot");
+      if (activeQuickFilter === "Nodes") return e.body1.includes("Node") || e.body2.includes("Node");
+      if (activeQuickFilter === "Hard") return ["Opp", "Sqr", "SsQ", "SSq", "Ses"].includes(e.aspect);
+      if (activeQuickFilter === "Soft") return ["Tri", "Sex", "Sxt", "Con", "Nov", "Qnt", "BQn", "Tdc", "bNv"].includes(e.aspect);
+      return true;
+    })
+    .filter(e => e.search.includes(search));
+
+  document.getElementById("eventsListTitle").textContent = `Pipeline Matrix Lineup (${filtered.length})`;
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state">No matching astronomical bounds tracked.</div>`;
+    return;
+  }
+
+  filtered.sort((a, b) => a.datetime - b.datetime);
+  
+  let groups = {};
+  filtered.forEach(e => {
+    if (!groups[e.date]) groups[e.date] = [];
+    groups[e.date].push(e);
+  });
+
+  Object.keys(groups).forEach(dateKey => {
+    const groupWrapper = document.createElement("div");
+    groupWrapper.className = "timeline-group";
+    
+    const header = document.createElement("div");
+    header.className = "timeline-header";
+    header.innerHTML = `
+      <div>📅 ${dateKey}</div>
+      <span class="relative-day">${getRelativeDayString(dateKey)}</span>
+    `;
+    groupWrapper.appendChild(header);
+
+    groups[dateKey].forEach(e => {
+      let cls = "event";
+      if (["Opp", "Sqr", "SsQ", "SSq"].includes(e.aspect)) cls += " red";
+      if (["Tri", "Sex", "Sxt", "Con"].includes(e.aspect)) cls += " green";
+      if (e.body1.includes("Node") || e.body2.includes("Node") || ["Tdc", "bNv"].includes(e.aspect)) cls += " purple";
+
+      const div = document.createElement("div");
+      div.className = cls;
+      div.innerHTML = `
+        <div class="event-main">
+          <div class="event-details">${e.body1}<b>${e.aspect}</b>${e.body2}</div>
+          <div class="coord-label">
+             <span>• ${e.body1}: ${e.pos1Formatted}</span> 
+             <span>• ${e.body2}: ${e.pos2Formatted}</span>
+          </div>
+          <div class="meta-footer">
+            <span class="accountName">${e.account}</span> 
+            <span class="angleName">${e.angle}</span>
+          </div>
+        </div>
+        <div class="event-meta">
+          <div class="time">${e.time}</div>
+          <div class="orb-display ${e.orb < 0.001 ? 'tight' : 'wide'}">orb: ${e.orb.toFixed(3)}°</div>
+        </div>
+      `;
+      groupWrapper.appendChild(div);
+    });
+    container.appendChild(groupWrapper);
+  });
+}
+
+function renderAccounts() {
+  const container = document.getElementById("accountsContainer");
+  container.innerHTML = "";
+  if(Object.keys(accounts).length === 0) {
+    container.innerHTML = `<div class="empty-state" style="grid-column: 1/-1">No profile logs parsed yet.</div>`;
+    return;
+  }
+  Object.values(accounts).forEach(acc => {
+    const enabled = selectedAccounts.has(acc.name);
+    const div = document.createElement("div");
+    div.className = `pill-box ${enabled ? 'active' : ''}`;
+    div.innerHTML = `<span>${enabled ? "☑" : "☐"} ${acc.name}</span><span class="pill-count">${acc.count}</span>`;
+    div.onclick = () => {
+      if (enabled) selectedAccounts.delete(acc.name);
+      else selectedAccounts.add(acc.name);
+      completeDataRefresh();
+    };
+    container.appendChild(div);
+  });
+}
+
+function renderObjectFilters() {
+  const container = document.getElementById("objectFilters");
+  container.innerHTML = "";
+  if(discoveredObjects.size === 0) {
+    container.innerHTML = `<div class="empty-state" style="width:100%">No tracked body matrices discovered.</div>`;
+    return;
+  }
+  [...discoveredObjects].sort().forEach(name => {
+    const active = selectedObjects.has(name);
+    const btn = document.createElement("div");
+    btn.className = `pill-box ${active ? 'filter-active' : ''}`;
+    btn.style.padding = "8px 12px";
+    btn.textContent = name;
+    btn.onclick = () => {
+      if (active) selectedObjects.delete(name);
+      else selectedObjects.add(name);
+      completeDataRefresh();
+    };
+    container.appendChild(btn);
+  });
+}
+
+const QUICK_FILTERS = ["Lots", "Nodes", "Hard", "Soft"];
+function renderQuickFilters() {
+  const container = document.getElementById("quickFilters");
+  container.innerHTML = "";
+  QUICK_FILTERS.forEach(f => {
+    const btn = document.createElement("div");
+    btn.className = `pill-box ${activeQuickFilter === f ? 'quick-active' : ''}`;
+    btn.style.padding = "10px 14px";
+    btn.textContent = f;
+    btn.onclick = () => {
+      activeQuickFilter = activeQuickFilter === f ? "" : f;
+      completeDataRefresh();
+    };
+    container.appendChild(btn);
+  });
+}
+
+function updateStats() {
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const tom = new Date(); tom.setDate(now.getDate() + 1);
+  const tomorrowStr = tom.toISOString().split('T')[0];
+  
+  let today = 0, tomorrow = 0, week = 0;
+  const oneWeekTime = now.getTime() + (7 * 86400000);
+
+  events.forEach(e => {
+    if (e.date === todayStr) today++;
+    else if (e.date === tomorrowStr) tomorrow++;
+    if (e.datetime >= now.getTime() && e.datetime <= oneWeekTime) week++;
+  });
+
+  document.getElementById("stat-today").textContent = today;
+  document.getElementById("stat-tomorrow").textContent = tomorrow;
+  document.getElementById("stat-week").textContent = week;
+}
+
+function saveState() {
+  const state = { events, accounts, discoveredObjects: [...discoveredObjects], selectedAccounts: [...selectedAccounts], selectedObjects: [...selectedObjects], activeQuickFilter };
+  localStorage.setItem("astroStateProV5", JSON.stringify(state));
+}
+
+function loadState() {
+  const saved = localStorage.getItem("astroStateProV5");
+  if (!saved) return;
+  try {
+    const state = JSON.parse(saved);
+    events = state.events || [];
+    accounts = state.accounts || {};
+    discoveredObjects = new Set(state.discoveredObjects || []);
+    selectedAccounts = new Set(state.selectedAccounts || []);
+    selectedObjects = new Set(state.selectedObjects || []);
+    activeQuickFilter = state.activeQuickFilter || "";
+  } catch(e) { clearAllData(); }
+}
+
+function generateMockData() {
+  const rawLines = [
+    `2026-06-25 12:02 Moon       Tdc  108deg True Node    14Sco44'43"  2Pis44'43"   +/-0.000 transit`,
+    `2026-06-25 12:18 Moon       Tdc  108deg Mean Node    14Sco52'31"  2Pis52'30"   +/-0.000 transit`,
+    `2026-06-25 16:00 Sun        Nov  40deg  Venus        4Can07'15"   14Leo07'15"  +/-0.240 transit`,
+    `2026-06-25 16:38 Moon       Tdc  108deg Jupiter      17Sco02'11"  29Can02'09"  +/-0.001 transit`,
+    `2026-06-25 21:13 Sun        SsQ  135deg Moon         4Can19'42"   19Sco19'44"  +/-0.560 transit`,
+    `2026-06-26 01:32 Sun        Qnx  150deg Pluto        4Can29'58"   4Aqu29'58"   +/-0.000 transit`,
+    `2026-06-26 10:18 Moon       Tri  120deg Mercury      25Sco49'58"  25Can49'58"  +/-0.030 transit`,
+    `2026-06-27 03:30 Moon       Tri  120deg Neptune      4Sag21'34"   4Ari21'34"   +/-0.000 transit`,
+    `2026-06-27 11:16 Mars       SSq  45deg  Saturn       29Tau01'29"  14Ari01'29"  +/-0.710 transit`,
+    `2026-06-29 14:00 Venus      Con  0deg   Mercury      12Leo44'12"  12Leo44'12"  +/-0.112 transit`
+  ];
+  
+  events = []; accounts = {}; 
+  discoveredObjects.clear(); selectedAccounts.clear(); selectedObjects.clear();
+  
+  const acc = "Core Ephemeris";
+  accounts[acc] = { name: acc, count: 0 };
+  selectedAccounts.add(acc);
+
+  rawLines.forEach(line => {
+    const parsed = parseEventLine(acc, line);
+    if(parsed) { events.push(parsed); accounts[acc].count++; }
+  });
+
+  completeDataRefresh();
+  switchView('dashboard');
+}
+
+function clearAllData() {
+  localStorage.removeItem("astroStateProV5");
+  events = []; accounts = {};
+  discoveredObjects.clear(); selectedAccounts.clear(); selectedObjects.clear();
+  activeQuickFilter = "";
+  completeDataRefresh();
+}
+
+loadState();
+completeDataRefresh();
+</script>
+</body>
+</html>
